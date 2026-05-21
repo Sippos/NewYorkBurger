@@ -8,10 +8,10 @@ export default function App() {
       </h1>
 
       <img
-        src="/assets/IMG_4107.jpeg"
+        src={`${import.meta.env.BASE_URL}assets/IMG_4107.jpeg`}
         alt="New York Burger storefront"
         className="w-full max-w-[420px] rounded-2xl shadow-2xl"
-      />
+/>
     </main>
   )
 }
