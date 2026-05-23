@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, Link } from "react-router-dom"
 import Movies from "./pages/Movies"
+import Lobby from "./pages/Lobby"
 
 export default function App() {
   const targetDate = new Date('2026-09-03T00:00:00')
@@ -71,6 +72,8 @@ export default function App() {
 
       {/* MOVIES PAGE */}
       <Route path="/movies" element={<Movies />} />
+      <Route path="/lobby" element={<Lobby />} />
+      <Route path="/lobby/:id" element={<Lobby />} />
 
     </Routes>
   )
