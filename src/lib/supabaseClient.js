@@ -145,6 +145,13 @@ export async function getWatched() {
     return handle(res)
 }
 
+  export async function deleteWatchedByMovieId(movieId) {
+    if (!supabase) return { error: 'Supabase not configured' }
+    const numeric = Number(movieId)
+    const res = await supabase.from('watched').delete().eq('movie_id', numeric)
+    return handle(res)
+  }
+
   export async function getRatingsForMovieIds(movieIds = []) {
     if (!supabase) return { error: 'Supabase not configured' }
     if (!movieIds || movieIds.length === 0) return { data: [] }

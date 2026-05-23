@@ -317,17 +317,17 @@ export default function Movies() {
                     <button
                       className="text-sm text-red-400 bg-neutral-900/30 px-2 py-1 rounded"
                       onClick={async () => {
-                        if (!confirm('Delete this watched entry?')) return
-                        // optimistic UI: remove locally first
+                        if (!confirm('Delete all watched entries for this movie (remove duplicates)?')) return
+                        // optimistic UI: remove locally first by movie_id
                         const prev = watched.slice()
-                        setWatched((s) => s.filter((x) => x.id !== w.id))
+                        setWatched((s) => s.filter((x) => x.movie_id !== w.movie_id))
                         try {
-                          const res = await deleteWatched(w.id)
+                          const res = await deleteWatchedByMovieId(w.movie_id)
                           if (res?.error) {
                             setActionMessage({ type: 'error', text: `Delete failed: ${String(res.error)}` })
                             setWatched(prev)
                           } else if (res?.data) {
-                            setActionMessage({ type: 'success', text: 'Deleted' })
+                            setActionMessage({ type: 'success', text: 'Deleted duplicates' })
                           } else {
                             setActionMessage({ type: 'error', text: 'Delete returned no data' })
                             setWatched(prev)
