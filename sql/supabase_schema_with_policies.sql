@@ -64,5 +64,8 @@ create policy public_select_watched on watched
 create policy public_insert_watched on watched
   for insert with check (true);
 
+ALTER TABLE votes
+ADD CONSTRAINT votes_unique_user_movie
+UNIQUE(movie_id, voter);
 -- NOTE: These policies are permissive for quick testing. For production, require
 -- authenticated users and stricter checks (auth.uid(), membership, etc.).

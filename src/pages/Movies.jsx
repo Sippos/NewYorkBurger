@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from "react"
 import { Link } from "react-router-dom"
 import SwipeDeck from "../components/SwipeDeck"
 import { searchMovies, getExternalIds, fetchImdbRating } from "../lib/tmdb"
-import { voteMovie, setRating, markWatched, getWatched, addNomination, getNominations, markWatchedWithRating, deleteWatched } from "../lib/supabaseClient"
+import { voteMovie, setRating, markWatched, getWatched, addNomination, getNominations, markWatchedWithRating, deleteWatched, deleteWatchedByMovieId, getRatingsForMovieIds } from "../lib/supabaseClient"
+import MovieRanking from "./components/MovieRanking"
 
 const FALLBACK = [
   { id: 1, title: "The Room", year: 2003, poster: "https://image.tmdb.org/t/p/w500/9BgcTVk5KZV9g0u6Q4Q0V6g9Z9Q.jpg" },
@@ -27,6 +28,7 @@ export default function Movies() {
   const [results, setResults] = useState([])
   const omdbKey = import.meta.env.VITE_OMDB_KEY
   const [watched, setWatched] = useState([])
+  const [raterName, setRaterName] = useState(() => localStorage.getItem('rater') || 'local')
   const [actionMessage, setActionMessage] = useState(null)
   const deckRef = useRef(null)
 
@@ -35,11 +37,12 @@ export default function Movies() {
       const res = await getNominations('global')
       if (res?.data) {
         const list = res.data.map((n) => ({
-          id: n.movie_id || n.id,
-          title: n.title,
-          year: '',
-          poster: n.poster,
-        }))
+            id: n.movie_id || n.id,
+            title: n.title,
+            year: '',
+            poster: n.poster,
+            nominated_by: n.nominated_by,
+          }))
         // fetch rating aggregates for these movies
         const ids = list.map((i) => i.id).filter(Boolean)
         if (ids.length) {
@@ -85,7 +88,7 @@ export default function Movies() {
 
   const handleAddLocal = (movie) => {
     // persist the nomination to Supabase (best-effort)
-    addNomination(movie).then((res) => {
+    addNomination(movie, raterName).then((res) => {
       if (res?.error) {
         setActionMessage({ type: 'error', text: `Saved locally, but DB error: ${String(res.error)}` })
       } else {
@@ -105,7 +108,7 @@ export default function Movies() {
   }
 
   const loadWatched = async () => {
-    const res = await getWatched()
+    const res = await getWatched(raterName)
     if (res?.data) setWatched(res.data)
   }
 
@@ -115,14 +118,31 @@ export default function Movies() {
   }, [])
 
   const handleSwipe = async (dir, movie) => {
-    const vote = dir === "right" ? "like" : "dislike"
-    setViewed((s) => [{ movie, vote, rating: 0 }, ...s])
-
-    // try to persist vote to Supabase (no-op if not configured)
-    try {
-      await voteMovie(movie, vote)
-    } catch (e) {
-      // ignore
+    // interpret right swipe as "mark watched" and left as "skip/dislike"
+    if (dir === 'right') {
+      // prompt for optional rating
+      const ans = window.prompt('Rate this movie 0-10 (optional)', '8')
+      const rating = ans === null || ans === '' ? null : Number(ans)
+      if (rating !== null && Number.isNaN(rating)) {
+        setActionMessage({ type: 'error', text: 'Invalid rating' })
+        setTimeout(() => setActionMessage(null), 2000)
+        return
+      }
+      setViewed((s) => [{ movie, vote: 'watch', rating: rating ?? 0 }, ...s])
+      try {
+        await markWatchedWithRating(movie, raterName, rating)
+        // record a vote as well for analytics
+        await voteMovie(movie, 'watch')
+        setActionMessage({ type: 'success', text: `Marked "${movie.title}" as watched` })
+        loadWatched()
+      } catch (e) {
+        // ignore
+      }
+    } else {
+      setViewed((s) => [{ movie, vote: 'skip', rating: 0 }, ...s])
+      try {
+        await voteMovie(movie, 'skip')
+      } catch (e) {}
     }
 
     setQueue((q) => q.filter((m) => m.id !== movie.id))
@@ -131,7 +151,7 @@ export default function Movies() {
   const handleRating = async (movieId, rating) => {
     setViewed((s) => s.map((v) => (v.movie.id === movieId ? { ...v, rating } : v)))
     try {
-      await setRating(movieId, rating)
+      await setRating(movieId, rating, raterName)
     } catch (e) {}
   }
 
@@ -143,6 +163,16 @@ export default function Movies() {
       </div>
 
       <h1 className="text-3xl mb-6">🎬 Thursday Movie Vote</h1>
+
+      <div className="mb-4 flex items-center gap-3">
+        <label className="text-sm text-neutral-400">Your name:</label>
+        <input
+          className="p-2 rounded bg-neutral-800"
+          value={raterName}
+          onChange={(e) => { setRaterName(e.target.value); localStorage.setItem('rater', e.target.value) }}
+          placeholder="your name or handle"
+        />
+      </div>
 
       <div className="mb-4">
         {!apiKey && (
@@ -191,7 +221,7 @@ export default function Movies() {
                   type="button"
                   className="bg-indigo-600 px-3 py-1 rounded ml-2"
                   title="Mark as watched"
-                  onClick={async () => {
+                      onClick={async () => {
                     try {
                       // ask user for a quick rating (optional)
                       const ans = window.prompt('Rate this movie 0-10 (optional)', '8')
@@ -201,7 +231,7 @@ export default function Movies() {
                         setTimeout(() => setActionMessage(null), 2000)
                         return
                       }
-                      await markWatchedWithRating(r, 'local', rating)
+                      await markWatchedWithRating(r, raterName, rating)
                       setActionMessage({ type: 'success', text: `Marked "${r.title}" as watched` })
                       loadWatched()
                       setTimeout(() => setActionMessage(null), 2500)
@@ -219,12 +249,12 @@ export default function Movies() {
         )}
 
         <div ref={deckRef}>
-          <SwipeDeck movies={queue} onSwipe={handleSwipe} />
+          <SwipeDeck movies={queue} onSwipe={handleSwipe} raterName={raterName} />
         </div>
       </div>
 
       <section>
-        <h2 className="text-xl mb-3">Viewed / Votes</h2>
+        <h2 className="text-xl mb-3">Movie Ranking</h2>
         {viewed.length === 0 ? (
           <p className="text-neutral-400">No movies viewed yet.</p>
         ) : (
@@ -255,7 +285,7 @@ export default function Movies() {
                           className="bg-indigo-600 px-3 py-1 rounded mt-2"
                           onClick={async () => {
                             try {
-                              await markWatchedWithRating(v.movie, 'local', v.rating)
+                              await markWatchedWithRating(v.movie, raterName, v.rating)
                               setActionMessage({ type: 'success', text: `Marked "${v.movie.title}" as watched` })
                               loadWatched()
                               setTimeout(() => setActionMessage(null), 2500)
@@ -300,7 +330,7 @@ export default function Movies() {
                       onChange={async (e) => {
                         const val = Number(e.target.value)
                         try {
-                          await setRating(w.movie_id, val)
+                          await setRating(w.movie_id, val, raterName)
                           setActionMessage({ type: 'success', text: `Saved rating ${val}` })
                           loadWatched()
                           setTimeout(() => setActionMessage(null), 2000)
@@ -310,7 +340,8 @@ export default function Movies() {
                         }
                       }}
                     />
-                    <div className="text-sm">Rating: {w.rating ?? 0}</div>
+                    <div className="text-sm">Your rating: {w.rating ?? 0}</div>
+                    <div className="text-xs text-neutral-400">Avg: {w.avgRating ?? 0} ({w.ratingCount ?? 0})</div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">

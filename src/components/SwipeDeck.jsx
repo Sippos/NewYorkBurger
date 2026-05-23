@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 
-export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
+export default function SwipeDeck({ movies = [], onSwipe = () => {}, raterName = 'local' }) {
   const [drag, setDrag] = useState(null)
   const pointer = useRef({ x: 0, y: 0 })
 
@@ -53,9 +53,33 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
               ) : null}
               <h3 className="text-xl font-bold">{m.title}</h3>
               <p className="text-sm text-neutral-400">{m.year}</p>
-              {(m.avgRating || m.imdbRating || m.tmdbRating) && (
-                <p className="text-sm text-yellow-400 mt-2">Rating: {m.avgRating ?? m.imdbRating ?? m.tmdbRating} {m.ratingCount ? `(${m.ratingCount})` : ''}</p>
-              )}
+              <div className="mt-2">
+                {(m.avgRating || m.imdbRating || m.tmdbRating) ? (
+                  <p className="text-sm text-yellow-400">Rating: {m.avgRating ?? m.imdbRating ?? m.tmdbRating} {m.ratingCount ? `(${m.ratingCount})` : ''}</p>
+                ) : (
+                  <p className="text-sm text-neutral-400">No rating</p>
+                )}
+                {m.nominated_by ? <p className="text-xs text-neutral-500">Nominated by {m.nominated_by}</p> : null}
+              </div>
+
+              {isTop ? (
+                <div className="mt-4 flex gap-3 justify-center">
+                  <button
+                    className="bg-green-600 px-4 py-2 rounded-lg"
+                    onClick={() => onSwipe('right', m)}
+                    aria-label="Mark watched"
+                  >
+                    Watch
+                  </button>
+                  <button
+                    className="bg-red-600 px-4 py-2 rounded-lg"
+                    onClick={() => onSwipe('left', m)}
+                    aria-label="Skip"
+                  >
+                    Skip
+                  </button>
+                </div>
+              ) : null}
             </div>
           )
         })}
