@@ -17,6 +17,8 @@ export default function Lobby() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [nominations, setNominations] = useState([])
+  const [supabaseStatus, setSupabaseStatus] = useState(null)
+  const [message, setMessage] = useState(null)
 
   useEffect(() => {
     if (paramId) setLobbyId(paramId)
@@ -26,7 +28,12 @@ export default function Lobby() {
     if (!lobbyId) return
     const load = async () => {
       const res = await getNominations(lobbyId)
-      if (res?.data) setNominations(res.data)
+      if (res?.error) {
+        setSupabaseStatus({ ok: false, error: res.error })
+      } else {
+        setSupabaseStatus({ ok: true })
+        setNominations(res.data)
+      }
     }
     load()
   }, [lobbyId])
@@ -48,11 +55,17 @@ export default function Lobby() {
   const handleNominate = async (movie) => {
     if (!lobbyId) return alert('Create or enter a lobby id first')
     try {
-      await nominateMovie(lobbyId, movie, 'anonymous')
-      const res = await getNominations(lobbyId)
-      if (res?.data) setNominations(res.data)
+      const res = await nominateMovie(lobbyId, movie, 'anonymous')
+      if (res?.error) {
+        setMessage({ type: 'error', text: String(res.error) })
+      } else {
+        setMessage({ type: 'success', text: 'Nominated successfully' })
+        const next = await getNominations(lobbyId)
+        if (!next?.error) setNominations(next.data)
+      }
     } catch (e) {
       console.error(e)
+      setMessage({ type: 'error', text: String(e) })
     }
   }
 
@@ -65,6 +78,16 @@ export default function Lobby() {
       </div>
 
       <h1 className="text-2xl mb-4">Lobby & Nominations</h1>
+
+      {supabaseStatus ? (
+        <div className={`mb-3 p-2 rounded ${supabaseStatus.ok ? 'bg-green-700' : 'bg-red-600'}`}>
+          {supabaseStatus.ok ? 'Supabase: connected' : `Supabase error: ${String(supabaseStatus.error)}`}
+        </div>
+      ) : null}
+
+      {message ? (
+        <div className={`mb-3 p-2 rounded ${message.type === 'error' ? 'bg-red-600' : 'bg-green-700'}`}>{message.text}</div>
+      ) : null}
 
       <div className="mb-4 flex gap-2">
         <input value={lobbyId} onChange={(e) => setLobbyId(e.target.value)} placeholder="Lobby id" className="p-2 rounded bg-neutral-800" />
