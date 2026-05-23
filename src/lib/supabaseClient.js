@@ -29,7 +29,7 @@ export async function setRating(movieId, rating) {
   // support per-rater ratings; default rater is 'local'
   const rater = typeof arguments[2] === 'string' ? arguments[2] : 'local'
   const payload = { movie_id: movieId, rating, rater }
-  const res = await supabase.from('ratings').upsert(payload)
+  const res = await supabase.from('ratings').upsert(payload, { onConflict: ['movie_id', 'rater'] })
   return handle(res)
 }
 
@@ -103,7 +103,7 @@ export async function markWatchedWithRating(movie, watchedBy, rating = null) {
   const res = await supabase.from('watched').insert([payload])
     if (rating !== null && rating !== undefined) {
       try {
-        await supabase.from('ratings').upsert({ movie_id: movie.id, rating, rater: watchedBy || 'local' })
+        await supabase.from('ratings').upsert({ movie_id: movie.id, rating, rater: watchedBy || 'local' }, { onConflict: ['movie_id', 'rater'] })
       } catch (e) {
         // ignore rating upsert errors
       }
