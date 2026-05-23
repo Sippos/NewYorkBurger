@@ -84,13 +84,42 @@ export async function markWatched(movie, watchedBy) {
     watched_by: watchedBy,
   }
   const res = await supabase.from('watched').insert([payload])
+  // do not fail if ratings table upsert fails — best-effort
+  return handle(res)
+}
+
+// mark watched and optionally store rating in `ratings` table
+export async function markWatchedWithRating(movie, watchedBy, rating = null) {
+  if (!supabase) return { error: 'Supabase not configured' }
+  const payload = {
+    movie_id: movie.id,
+    title: movie.title,
+    poster: movie.poster,
+    watched_by: watchedBy,
+  }
+  const res = await supabase.from('watched').insert([payload])
+  if (rating !== null && rating !== undefined) {
+    try {
+      await supabase.from('ratings').upsert({ movie_id: movie.id, rating })
+    } catch (e) {
+      // ignore rating upsert errors
+    }
+  }
   return handle(res)
 }
 
 export async function getWatched() {
   if (!supabase) return { error: 'Supabase not configured' }
   const res = await supabase.from('watched').select('*').order('watched_at', { ascending: false })
-  return handle(res)
+  if (res?.error) return handle(res)
+  const items = res.data || []
+  const movieIds = items.map((i) => i.movie_id).filter(Boolean)
+  if (movieIds.length === 0) return { data: items }
+  const r = await supabase.from('ratings').select('movie_id,rating').in('movie_id', movieIds)
+  const ratings = (r?.data) || []
+  const ratingMap = Object.fromEntries(ratings.map((x) => [x.movie_id, x.rating]))
+  const merged = items.map((it) => ({ ...it, rating: ratingMap[it.movie_id] ?? 0 }))
+  return { data: merged }
 }
 
 export default supabase

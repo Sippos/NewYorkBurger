@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react"
 import { Link } from "react-router-dom"
 import SwipeDeck from "../components/SwipeDeck"
 import { searchMovies, getExternalIds, fetchImdbRating } from "../lib/tmdb"
-import { voteMovie, setRating, markWatched, getWatched, addNomination, getNominations } from "../lib/supabaseClient"
+import { voteMovie, setRating, markWatched, getWatched, addNomination, getNominations, markWatchedWithRating } from "../lib/supabaseClient"
 
 const FALLBACK = [
   { id: 1, title: "The Room", year: 2003, poster: "https://image.tmdb.org/t/p/w500/9BgcTVk5KZV9g0u6Q4Q0V6g9Z9Q.jpg" },
@@ -179,7 +179,15 @@ export default function Movies() {
                   title="Mark as watched"
                   onClick={async () => {
                     try {
-                      await markWatched(r, 'local')
+                      // ask user for a quick rating (optional)
+                      const ans = window.prompt('Rate this movie 0-10 (optional)', '8')
+                      const rating = ans === null || ans === '' ? null : Number(ans)
+                      if (rating !== null && Number.isNaN(rating)) {
+                        setActionMessage({ type: 'error', text: 'Invalid rating' })
+                        setTimeout(() => setActionMessage(null), 2000)
+                        return
+                      }
+                      await markWatchedWithRating(r, 'local', rating)
                       setActionMessage({ type: 'success', text: `Marked "${r.title}" as watched` })
                       loadWatched()
                       setTimeout(() => setActionMessage(null), 2500)
@@ -233,7 +241,7 @@ export default function Movies() {
                           className="bg-indigo-600 px-3 py-1 rounded mt-2"
                           onClick={async () => {
                             try {
-                              await markWatched(v.movie, 'local')
+                              await markWatchedWithRating(v.movie, 'local', v.rating)
                               setActionMessage({ type: 'success', text: `Marked "${v.movie.title}" as watched` })
                               loadWatched()
                               setTimeout(() => setActionMessage(null), 2500)
@@ -247,6 +255,48 @@ export default function Movies() {
                         </button>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-xl mb-3">Watched</h2>
+        {watched.length === 0 ? (
+          <p className="text-neutral-400">No watched movies yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {watched.map((w) => (
+              <div key={w.id} className="bg-neutral-800 p-3 rounded-lg flex gap-3 items-start">
+                {w.poster ? <img src={w.poster} alt="" className="w-20 rounded" /> : null}
+                <div className="flex-1">
+                  <div className="flex justify-between">
+                    <strong>{w.title}</strong>
+                    <div className="text-sm text-neutral-400">{w.watched_at ? new Date(w.watched_at).toLocaleDateString() : ''}</div>
+                  </div>
+                  <div className="mt-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max="10"
+                      value={w.rating ?? 0}
+                      onChange={async (e) => {
+                        const val = Number(e.target.value)
+                        try {
+                          await setRating(w.movie_id, val)
+                          setActionMessage({ type: 'success', text: `Saved rating ${val}` })
+                          loadWatched()
+                          setTimeout(() => setActionMessage(null), 2000)
+                        } catch (err) {
+                          setActionMessage({ type: 'error', text: 'Error saving rating' })
+                          setTimeout(() => setActionMessage(null), 2000)
+                        }
+                      }}
+                    />
+                    <div className="text-sm">Rating: {w.rating ?? 0}</div>
                   </div>
                 </div>
               </div>
