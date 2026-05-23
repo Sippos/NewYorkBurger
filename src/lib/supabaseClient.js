@@ -144,4 +144,21 @@ export async function getWatched() {
     return handle(res)
 }
 
+  export async function getRatingsForMovieIds(movieIds = []) {
+    if (!supabase) return { error: 'Supabase not configured' }
+    if (!movieIds || movieIds.length === 0) return { data: [] }
+    const r = await supabase.from('ratings').select('movie_id,rating').in('movie_id', movieIds)
+    if (r?.error) return handle(r)
+    // aggregate
+    const agg = {}
+    (r.data || []).forEach((row) => {
+      const id = row.movie_id
+      if (!agg[id]) agg[id] = { sum: 0, count: 0 }
+      agg[id].sum += Number(row.rating) || 0
+      agg[id].count += 1
+    })
+    const result = Object.entries(agg).map(([movie_id, v]) => ({ movie_id: Number(movie_id), avg: Math.round((v.sum / v.count) * 10) / 10, count: v.count }))
+    return { data: result }
+  }
+
 export default supabase

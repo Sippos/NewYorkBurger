@@ -53,8 +53,8 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
               ) : null}
               <h3 className="text-xl font-bold">{m.title}</h3>
               <p className="text-sm text-neutral-400">{m.year}</p>
-              {(m.imdbRating || m.tmdbRating) && (
-                <p className="text-sm text-yellow-400 mt-2">Rating: {m.imdbRating ?? m.tmdbRating}</p>
+              {(m.avgRating || m.imdbRating || m.tmdbRating) && (
+                <p className="text-sm text-yellow-400 mt-2">Rating: {m.avgRating ?? m.imdbRating ?? m.tmdbRating} {m.ratingCount ? `(${m.ratingCount})` : ''}</p>
               )}
             </div>
           )

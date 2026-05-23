@@ -40,6 +40,20 @@ export default function Movies() {
           year: '',
           poster: n.poster,
         }))
+        // fetch rating aggregates for these movies
+        const ids = list.map((i) => i.id).filter(Boolean)
+        if (ids.length) {
+          try {
+            const rr = await getRatingsForMovieIds(ids)
+            const map = (rr?.data || []).reduce((acc, r) => ({ ...acc, [r.movie_id]: r }), {})
+            const merged = list.map((it) => ({ ...it, avgRating: map[it.id]?.avg ?? null, ratingCount: map[it.id]?.count ?? 0 }))
+            setMovies(merged)
+            setQueue(merged.slice())
+            return
+          } catch (e) {
+            // ignore rating fetch error
+          }
+        }
         setMovies(list)
         setQueue(list.slice())
       }
