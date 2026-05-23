@@ -314,25 +314,29 @@ export default function Movies() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  {w.watched_by === 'local' && (
                     <button
                       className="text-sm text-red-400 bg-neutral-900/30 px-2 py-1 rounded"
                       onClick={async () => {
                         if (!confirm('Delete this watched entry?')) return
                         try {
-                          await deleteWatched(w.id)
-                          setActionMessage({ type: 'success', text: 'Deleted' })
+                          const res = await deleteWatched(w.id)
+                          if (res?.error) {
+                            setActionMessage({ type: 'error', text: `Delete failed: ${String(res.error)}` })
+                          } else if (res?.data) {
+                            setActionMessage({ type: 'success', text: 'Deleted' })
+                          } else {
+                            setActionMessage({ type: 'error', text: 'Delete returned no data' })
+                          }
                           loadWatched()
                           setTimeout(() => setActionMessage(null), 1500)
                         } catch (e) {
-                          setActionMessage({ type: 'error', text: 'Delete failed' })
+                          setActionMessage({ type: 'error', text: `Delete exception: ${String(e)}` })
                           setTimeout(() => setActionMessage(null), 1500)
                         }
                       }}
                     >
                       Delete
                     </button>
-                  )}
                   <div className="text-xs text-neutral-400">{w.ratingCount ?? 0} ratings</div>
                 </div>
               </div>
