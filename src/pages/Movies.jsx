@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react"
 import { Link } from "react-router-dom"
 import SwipeDeck from "../components/SwipeDeck"
 import { searchMovies, getExternalIds, fetchImdbRating } from "../lib/tmdb"
-import { voteMovie, setRating, markWatched, getWatched, addNomination, getNominations, markWatchedWithRating } from "../lib/supabaseClient"
+import { voteMovie, setRating, markWatched, getWatched, addNomination, getNominations, markWatchedWithRating, deleteWatched } from "../lib/supabaseClient"
 
 const FALLBACK = [
   { id: 1, title: "The Room", year: 2003, poster: "https://image.tmdb.org/t/p/w500/9BgcTVk5KZV9g0u6Q4Q0V6g9Z9Q.jpg" },
