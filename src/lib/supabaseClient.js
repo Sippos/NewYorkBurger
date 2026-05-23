@@ -49,6 +49,20 @@ export async function nominateMovie(lobbyId, movie, nominatedBy) {
   return handle(res)
 }
 
+// Add a nomination without a specific lobby (local/global queue)
+export async function addNomination(movie, nominatedBy = 'local') {
+  if (!supabase) return { error: 'Supabase not configured' }
+  const payload = {
+    lobby_id: 'global',
+    movie_id: movie.id,
+    title: movie.title,
+    poster: movie.poster,
+    nominated_by: nominatedBy,
+  }
+  const res = await supabase.from('nominations').insert([payload])
+  return handle(res)
+}
+
 export async function getNominations(lobbyId) {
   if (!supabase) return { error: 'Supabase not configured' }
   const res = await supabase.from('nominations').select('*').eq('lobby_id', lobbyId).order('created_at', { ascending: false })
