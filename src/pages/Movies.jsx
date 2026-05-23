@@ -318,19 +318,26 @@ export default function Movies() {
                       className="text-sm text-red-400 bg-neutral-900/30 px-2 py-1 rounded"
                       onClick={async () => {
                         if (!confirm('Delete this watched entry?')) return
+                        // optimistic UI: remove locally first
+                        const prev = watched.slice()
+                        setWatched((s) => s.filter((x) => x.id !== w.id))
                         try {
                           const res = await deleteWatched(w.id)
                           if (res?.error) {
                             setActionMessage({ type: 'error', text: `Delete failed: ${String(res.error)}` })
+                            setWatched(prev)
                           } else if (res?.data) {
                             setActionMessage({ type: 'success', text: 'Deleted' })
                           } else {
                             setActionMessage({ type: 'error', text: 'Delete returned no data' })
+                            setWatched(prev)
                           }
+                          // refresh from server to be safe
                           loadWatched()
                           setTimeout(() => setActionMessage(null), 1500)
                         } catch (e) {
                           setActionMessage({ type: 'error', text: `Delete exception: ${String(e)}` })
+                          setWatched(prev)
                           setTimeout(() => setActionMessage(null), 1500)
                         }
                       }}

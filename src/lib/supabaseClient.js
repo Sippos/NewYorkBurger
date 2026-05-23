@@ -140,7 +140,8 @@ export async function getWatched() {
 
   export async function deleteWatched(id) {
     if (!supabase) return { error: 'Supabase not configured' }
-    const res = await supabase.from('watched').delete().eq('id', id)
+    const numericId = Number(id)
+    const res = await supabase.from('watched').delete().eq('id', numericId)
     return handle(res)
 }
 
