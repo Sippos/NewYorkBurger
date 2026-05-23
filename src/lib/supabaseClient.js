@@ -26,7 +26,10 @@ export async function voteMovie(movie, vote) {
 
 export async function setRating(movieId, rating) {
   if (!supabase) return { error: 'Supabase not configured' }
-  const res = await supabase.from('ratings').upsert({ movie_id: movieId, rating })
+  // support per-rater ratings; default rater is 'local'
+  const rater = typeof arguments[2] === 'string' ? arguments[2] : 'local'
+  const payload = { movie_id: movieId, rating, rater }
+  const res = await supabase.from('ratings').upsert(payload)
   return handle(res)
 }
 
@@ -98,13 +101,13 @@ export async function markWatchedWithRating(movie, watchedBy, rating = null) {
     watched_by: watchedBy,
   }
   const res = await supabase.from('watched').insert([payload])
-  if (rating !== null && rating !== undefined) {
-    try {
-      await supabase.from('ratings').upsert({ movie_id: movie.id, rating })
-    } catch (e) {
-      // ignore rating upsert errors
+    if (rating !== null && rating !== undefined) {
+      try {
+        await supabase.from('ratings').upsert({ movie_id: movie.id, rating, rater: watchedBy || 'local' })
+      } catch (e) {
+        // ignore rating upsert errors
+      }
     }
-  }
   return handle(res)
 }
 
@@ -117,9 +120,28 @@ export async function getWatched() {
   if (movieIds.length === 0) return { data: items }
   const r = await supabase.from('ratings').select('movie_id,rating').in('movie_id', movieIds)
   const ratings = (r?.data) || []
-  const ratingMap = Object.fromEntries(ratings.map((x) => [x.movie_id, x.rating]))
-  const merged = items.map((it) => ({ ...it, rating: ratingMap[it.movie_id] ?? 0 }))
-  return { data: merged }
+    // compute average and count per movie
+    const agg = {}
+    ratings.forEach((row) => {
+      const id = row.movie_id
+      if (!agg[id]) agg[id] = { sum: 0, count: 0 }
+      agg[id].sum += Number(row.rating) || 0
+      agg[id].count += 1
+    })
+    const merged = items.map((it) => ({
+      ...it,
+      avgRating: agg[it.movie_id] ? Math.round((agg[it.movie_id].sum / agg[it.movie_id].count) * 10) / 10 : 0,
+      ratingCount: agg[it.movie_id] ? agg[it.movie_id].count : 0,
+      rating: agg[it.movie_id] ? Math.round((agg[it.movie_id].sum / agg[it.movie_id].count) * 10) / 10 : 0,
+    }))
+    return { data: merged }
+
+  }
+
+  export async function deleteWatched(id) {
+    if (!supabase) return { error: 'Supabase not configured' }
+    const res = await supabase.from('watched').delete().eq('id', id)
+    return handle(res)
 }
 
 export default supabase
