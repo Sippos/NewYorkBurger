@@ -20,6 +20,13 @@ jobs:
           node-version: 20
 
       - run: npm ci
+      - name: Inject VITE_ env from secrets
+        run: |
+          echo "VITE_TMDB_KEY=${{ secrets.VITE_TMDB_KEY }}" >> $GITHUB_ENV
+          echo "VITE_OMDB_KEY=${{ secrets.VITE_OMDB_KEY }}" >> $GITHUB_ENV
+          echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> $GITHUB_ENV
+          echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}" >> $GITHUB_ENV
+
       - run: npm run build
 
       - uses: actions/configure-pages@v5
