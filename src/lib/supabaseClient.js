@@ -168,14 +168,15 @@ export async function markWatchedWithRating(movie, watchedBy, rating = null) {
 
   const res = await supabase
     .from("watched")
-    .insert([
+    .upsert(
       {
         movie_id: movie.id,
         title: movie.title,
         poster: movie.poster,
         watched_by: watchedBy,
       },
-    ])
+      { onConflict: "movie_id" }
+    )
     .select()
 
   if (rating !== null && rating !== undefined) {
@@ -208,26 +209,28 @@ export async function getWatched(rater = "local") {
   const ratings = ratingsRes.data || []
 
   return {
-    data: watched.map((movie) => {
-      const movieRatings = ratings.filter((r) => r.movie_id === movie.movie_id)
-      const myRating = movieRatings.find((r) => r.rater === rater)
+    data: watched
+      .map((movie) => {
+        const movieRatings = ratings.filter((r) => r.movie_id === movie.movie_id)
+        const myRating = movieRatings.find((r) => r.rater === rater)
 
-      const avgRating =
-        movieRatings.length > 0
-          ? Math.round(
-              (movieRatings.reduce((sum, r) => sum + Number(r.rating), 0) /
-                movieRatings.length) *
-                10
-            ) / 10
-          : 0
+        const avgRating =
+          movieRatings.length > 0
+            ? Math.round(
+                (movieRatings.reduce((sum, r) => sum + Number(r.rating), 0) /
+                  movieRatings.length) *
+                  10
+              ) / 10
+            : null
 
-      return {
-        ...movie,
-        rating: myRating?.rating ?? 0,
-        avgRating,
-        ratingCount: movieRatings.length,
-      }
-    }),
+        return {
+          ...movie,
+          rating: myRating?.rating ?? null,
+          avgRating,
+          ratingCount: movieRatings.length,
+        }
+      })
+      .sort((a, b) => (b.avgRating ?? -1) - (a.avgRating ?? -1) || b.ratingCount - a.ratingCount),
   }
 }
 
