@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, Link } from "react-router-dom"
 import Movies from "./pages/Movies"
+import Videos from "./pages/Videos"
 import Lobby from "./pages/Lobby"
 
 export default function App() {
@@ -30,16 +31,14 @@ export default function App() {
   return (
     <Routes>
 
-      {/* HOME PAGE */}
       <Route
         path="/"
         element={
           <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center px-5 py-10">
-
-            {/* NAVBAR */}
             <div className="absolute top-5 flex gap-6 text-sm text-neutral-300">
               <Link to="/" className="hover:text-white">Home</Link>
               <Link to="/movies" className="hover:text-white">Movies 🎬</Link>
+              <Link to="/videos" className="hover:text-white">Funny Videos 📺</Link>
             </div>
 
             <h1 className="mb-10 text-center text-5xl md:text-7xl font-black italic tracking-tight">
@@ -70,8 +69,8 @@ export default function App() {
         }
       />
 
-      {/* MOVIES PAGE */}
       <Route path="/movies" element={<Movies />} />
+      <Route path="/videos" element={<Videos />} />
       <Route path="/lobby" element={<Lobby />} />
       <Route path="/lobby/:id" element={<Lobby />} />
 
