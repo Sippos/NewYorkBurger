@@ -19,7 +19,13 @@ const LOBBY_ID = "global"
 
 function getSavedHandles() {
   try {
-    return JSON.parse(localStorage.getItem("movie_handles") || "[]")
+    const raw = JSON.parse(localStorage.getItem("movie_handles") || "[]")
+    const clean = raw
+      .filter(Boolean)
+      .map((item) => String(item).trim())
+      .filter((item) => item.length >= 2)
+
+    return [...new Map(clean.map((item) => [item.toLowerCase(), item])).values()].slice(0, 5)
   } catch {
     return []
   }
@@ -27,10 +33,14 @@ function getSavedHandles() {
 
 function saveHandle(handle) {
   const clean = handle.trim()
-  if (!clean) return
+  if (clean.length < 2) return
 
   const handles = getSavedHandles()
-  const next = [clean, ...handles.filter((item) => item.toLowerCase() !== clean.toLowerCase())].slice(0, 5)
+  const next = [
+    clean,
+    ...handles.filter((item) => item.toLowerCase() !== clean.toLowerCase()),
+  ].slice(0, 5)
+
   localStorage.setItem("movie_handles", JSON.stringify(next))
 }
 
@@ -49,6 +59,17 @@ export default function Movies() {
   const deckRef = useRef(null)
   const apiKey = import.meta.env.VITE_TMDB_KEY
   const hasResults = results.length > 0
+
+  function persistCurrentHandle() {
+    localStorage.setItem("rater", raterName)
+    saveHandle(raterName)
+    setSavedHandles(getSavedHandles())
+  }
+
+  function updateHandle(value) {
+    setRaterName(value)
+    localStorage.setItem("rater", value)
+  }
 
   async function loadNominations() {
     try {
@@ -79,13 +100,6 @@ export default function Movies() {
     if (res?.data) setWatched(res.data)
   }
 
-  function updateHandle(value) {
-    setRaterName(value)
-    localStorage.setItem("rater", value)
-    saveHandle(value)
-    setSavedHandles(getSavedHandles())
-  }
-
   function clearSearch() {
     setQuery("")
     setResults([])
@@ -93,12 +107,15 @@ export default function Movies() {
   }
 
   async function handleResetVotes() {
+    persistCurrentHandle()
+
     const ok = window.confirm(`Reset all votes for "${raterName}" in this lobby?`)
     if (!ok) return
 
     const res = await resetVotesForVoter(LOBBY_ID, raterName)
     if (res?.error) {
-      setActionMessage({ type: "error", text: "Could not reset your votes." })
+      const message = res.error?.message || String(res.error)
+      setActionMessage({ type: "error", text: `Could not reset your votes: ${message}` })
       return
     }
 
@@ -116,16 +133,23 @@ export default function Movies() {
     loadWatched()
   }, [raterName])
 
+  useEffect(() => {
+    const cleaned = getSavedHandles()
+    localStorage.setItem("movie_handles", JSON.stringify(cleaned))
+    setSavedHandles(cleaned)
+  }, [])
+
   async function handleSearch(e) {
     e.preventDefault()
     if (!query.trim()) return
-    saveHandle(raterName)
-    setSavedHandles(getSavedHandles())
+
+    persistCurrentHandle()
     const movies = await searchMovies(apiKey, query)
     setResults(movies)
   }
 
   async function handleAddMovie(movie) {
+    persistCurrentHandle()
     const res = await addNomination(movie, raterName, LOBBY_ID)
 
     if (res?.error) {
@@ -140,6 +164,7 @@ export default function Movies() {
   }
 
   async function handleSwipe(vote, movie) {
+    persistCurrentHandle()
     const res = await voteMovie(movie, vote, LOBBY_ID, raterName)
 
     if (res?.error) {
@@ -147,8 +172,6 @@ export default function Movies() {
       return
     }
 
-    saveHandle(raterName)
-    setSavedHandles(getSavedHandles())
     setQueue((current) => current.filter((item) => item.id !== movie.id))
     setRankingRefreshKey((current) => current + 1)
     setActionMessage({
@@ -164,6 +187,7 @@ export default function Movies() {
   }
 
   async function handleMarkWatched(movie) {
+    persistCurrentHandle()
     const answer = window.prompt("Rate this movie 0-10 optional", "8")
     const rating = answer === null || answer === "" ? null : Number(answer)
 
@@ -204,6 +228,7 @@ export default function Movies() {
                 className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none transition focus:border-white/30"
                 value={raterName}
                 onChange={(e) => updateHandle(e.target.value)}
+                onBlur={persistCurrentHandle}
                 placeholder="for example sip"
               />
               <div className="mt-2 flex flex-wrap gap-2">
@@ -216,7 +241,10 @@ export default function Movies() {
                         ? "border-white bg-white text-neutral-950"
                         : "border-white/10 text-neutral-400 hover:border-white/30"
                     }`}
-                    onClick={() => updateHandle(handle)}
+                    onClick={() => {
+                      setRaterName(handle)
+                      localStorage.setItem("rater", handle)
+                    }}
                   >
                     {handle}
                   </button>
