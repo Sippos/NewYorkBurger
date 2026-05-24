@@ -67,5 +67,19 @@ create policy public_insert_watched on watched
 ALTER TABLE votes
 ADD CONSTRAINT votes_unique_user_movie
 UNIQUE(movie_id, voter);
+
+drop table if exists votes;
+
+create table votes (
+  id bigserial primary key,
+  lobby_id text not null default 'global',
+  movie_id bigint not null,
+  title text,
+  poster text,
+  voter text not null,
+  vote text not null check (vote in ('like', 'dislike')),
+  created_at timestamptz default now(),
+  unique(lobby_id, movie_id, voter)
+);
 -- NOTE: These policies are permissive for quick testing. For production, require
 -- authenticated users and stricter checks (auth.uid(), membership, etc.).

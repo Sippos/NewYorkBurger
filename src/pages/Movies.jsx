@@ -117,36 +117,7 @@ export default function Movies() {
     loadGlobalNominations()
   }, [])
 
-  const handleSwipe = async (dir, movie) => {
-    // interpret right swipe as "mark watched" and left as "skip/dislike"
-    if (dir === 'right') {
-      // prompt for optional rating
-      const ans = window.prompt('Rate this movie 0-10 (optional)', '8')
-      const rating = ans === null || ans === '' ? null : Number(ans)
-      if (rating !== null && Number.isNaN(rating)) {
-        setActionMessage({ type: 'error', text: 'Invalid rating' })
-        setTimeout(() => setActionMessage(null), 2000)
-        return
-      }
-      setViewed((s) => [{ movie, vote: 'watch', rating: rating ?? 0 }, ...s])
-      try {
-        await markWatchedWithRating(movie, raterName, rating)
-        // record a vote as well for analytics
-        await voteMovie(movie, 'watch')
-        setActionMessage({ type: 'success', text: `Marked "${movie.title}" as watched` })
-        loadWatched()
-      } catch (e) {
-        // ignore
-      }
-    } else {
-      setViewed((s) => [{ movie, vote: 'skip', rating: 0 }, ...s])
-      try {
-        await voteMovie(movie, 'skip')
-      } catch (e) {}
-    }
-
-    setQueue((q) => q.filter((m) => m.id !== movie.id))
-  }
+import { getUserId } from "../utils/userID"
 
   const handleRating = async (movieId, rating) => {
     setViewed((s) => s.map((v) => (v.movie.id === movieId ? { ...v, rating } : v)))

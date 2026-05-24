@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { getMovieRanking, getMyVotes } from "../supabaseClient"
+import { getMovieRanking, getMyVotes, supabase } from "../lib/supabaseClient"
 
 export default function MovieRanking() {
   const [movies, setMovies] = useState([])

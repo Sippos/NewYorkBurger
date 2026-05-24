@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { getUserId } from "./utils/userId"
+import { getUserId } from "./utils/userId.js"
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -13,22 +13,28 @@ function handle(res) {
 }
 
 
-export async function voteMovie(movie, vote) {
+export async function voteMovie(movie, vote, lobbyId = 'global') {
+  if (!supabase) return { error: 'Supabase not configured' }
+
   const voter = getUserId()
 
-  return supabase
+  const res = await supabase
     .from("votes")
-    .upsert([
+    .upsert(
       {
+        lobby_id: lobbyId,
         movie_id: movie.id,
         title: movie.title,
         poster: movie.poster,
         vote,
         voter,
-        created_at: new Date().toISOString()
-      }
-    ])
+      },
+      { onConflict: "lobby_id,movie_id,voter" }
+    )
+
+  return handle(res)
 }
+
   const res = await supabase.from('votes').insert([payload])
   return handle(res)
 
