@@ -12,6 +12,11 @@ function handle(res) {
   return { data: res.data }
 }
 
+export function getVoterId(handleName = "") {
+  const handle = String(handleName || "").trim().toLowerCase()
+  return handle || getUserId()
+}
+
 export async function addNomination(movie, nominatedBy = "local", lobbyId = "global") {
   if (!supabase) return { error: "Supabase not configured" }
 
@@ -45,10 +50,10 @@ export async function getNominations(lobbyId = "global") {
   return handle(res)
 }
 
-export async function voteMovie(movie, vote, lobbyId = "global") {
+export async function voteMovie(movie, vote, lobbyId = "global", voterName = "") {
   if (!supabase) return { error: "Supabase not configured" }
 
-  const voter = getUserId()
+  const voter = getVoterId(voterName)
 
   const payload = {
     lobby_id: lobbyId,
@@ -103,10 +108,10 @@ export async function getMovieRanking(lobbyId = "global") {
     .sort((a, b) => b.likes - a.likes || b.score - a.score)
 }
 
-export async function getMyVotes(lobbyId = "global") {
+export async function getMyVotes(lobbyId = "global", voterName = "") {
   if (!supabase) return []
 
-  const voter = getUserId()
+  const voter = getVoterId(voterName)
 
   const { data, error } = await supabase
     .from("votes")
