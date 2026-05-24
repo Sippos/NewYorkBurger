@@ -1,8 +1,10 @@
-import React, { useRef, useState } from 'react'
+import { useRef, useState } from "react"
 
-export default function SwipeDeck({ movies = [], onSwipe = () => {}, raterName = 'local' }) {
+export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
   const [drag, setDrag] = useState(null)
   const pointer = useRef({ x: 0, y: 0 })
+
+  const topMovie = movies[0]
 
   const handlePointerDown = (e) => {
     const p = e.touches ? e.touches[0] : e
@@ -13,70 +15,111 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {}, raterName =
   const handlePointerMove = (e) => {
     if (!drag) return
     const p = e.touches ? e.touches[0] : e
-    const dx = p.clientX - pointer.current.x
-    const dy = p.clientY - pointer.current.y
-    setDrag({ dx, dy })
+    setDrag({
+      dx: p.clientX - pointer.current.x,
+      dy: p.clientY - pointer.current.y,
+    })
   }
 
   const handlePointerUp = (movie) => {
     if (!drag) return
+
     const threshold = 120
-    const dir = drag.dx > threshold ? 'right' : drag.dx < -threshold ? 'left' : null
-    if (dir) onSwipe(dir, movie)
+
+    if (drag.dx > threshold) {
+      onSwipe("right", movie)
+    }
+
+    if (drag.dx < -threshold) {
+      onSwipe("left", movie)
+    }
+
     setDrag(null)
+  }
+
+  if (movies.length === 0) {
+    return (
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 text-center text-neutral-400">
+        No movies in the swipe pool yet. Search and add a movie first.
+      </div>
+    )
   }
 
   return (
     <div className="w-full max-w-xl mx-auto">
+      <div className="mb-3 text-center text-sm text-neutral-400">
+        Swipe right for “want to watch”, left for “skip”.
+      </div>
+
       <div className="relative h-[520px]">
-        {movies.map((m, i) => {
-          const isTop = i === 0
-          const style = isTop && drag ? {
-            transform: `translate(${drag.dx}px, ${drag.dy}px) rotate(${drag.dx / 20}deg)`,
-            transition: 'transform 0s',
-          } : { transition: 'transform 300ms ease' }
+        {movies.map((movie, index) => {
+          const isTop = movie.id === topMovie.id
+
+          const style =
+            isTop && drag
+              ? {
+                  transform: `translate(${drag.dx}px, ${drag.dy}px) rotate(${
+                    drag.dx / 20
+                  }deg)`,
+                  transition: "transform 0s",
+                }
+              : {
+                  transform: `scale(${1 - index * 0.03}) translateY(${
+                    index * 10
+                  }px)`,
+                  transition: "transform 300ms ease",
+                }
 
           return (
             <div
-              key={m.id}
-              className={`absolute left-0 right-0 mx-auto w-[320px] bg-neutral-800 rounded-2xl shadow-xl p-4 text-center ${isTop ? 'cursor-grab' : 'pointer-events-none'}`}
-              style={{ ...style, zIndex: movies.length - i }}
+              key={movie.id}
+              className={`absolute left-0 right-0 mx-auto w-[320px] bg-neutral-800 rounded-2xl shadow-xl p-4 text-center ${
+                isTop ? "cursor-grab" : "pointer-events-none"
+              }`}
+              style={{ ...style, zIndex: movies.length - index }}
               onMouseDown={isTop ? handlePointerDown : undefined}
               onTouchStart={isTop ? handlePointerDown : undefined}
               onMouseMove={isTop ? handlePointerMove : undefined}
               onTouchMove={isTop ? handlePointerMove : undefined}
-              onMouseUp={isTop ? () => handlePointerUp(m) : undefined}
-              onTouchEnd={isTop ? () => handlePointerUp(m) : undefined}
+              onMouseUp={isTop ? () => handlePointerUp(movie) : undefined}
+              onTouchEnd={isTop ? () => handlePointerUp(movie) : undefined}
             >
-              {m.poster ? (
-                <img src={m.poster} alt={m.title} className="w-full rounded-lg mb-3" />
+              {movie.poster ? (
+                <img
+                  src={movie.poster}
+                  alt={movie.title}
+                  className="w-full rounded-lg mb-3"
+                />
               ) : null}
-              <h3 className="text-xl font-bold">{m.title}</h3>
-              <p className="text-sm text-neutral-400">{m.year}</p>
-              <div className="mt-2">
-                {(m.avgRating || m.imdbRating || m.tmdbRating) ? (
-                  <p className="text-sm text-yellow-400">Rating: {m.avgRating ?? m.imdbRating ?? m.tmdbRating} {m.ratingCount ? `(${m.ratingCount})` : ''}</p>
-                ) : (
-                  <p className="text-sm text-neutral-400">No rating</p>
-                )}
-                {m.nominated_by ? <p className="text-xs text-neutral-500">Nominated by {m.nominated_by}</p> : null}
-              </div>
+
+              <h3 className="text-xl font-bold">{movie.title}</h3>
+
+              {movie.year ? (
+                <p className="text-sm text-neutral-400">{movie.year}</p>
+              ) : null}
+
+              {movie.nominated_by ? (
+                <p className="text-xs text-neutral-500 mt-1">
+                  Added by {movie.nominated_by}
+                </p>
+              ) : null}
 
               {isTop ? (
                 <div className="mt-4 flex gap-3 justify-center">
                   <button
-                    className="bg-green-600 px-4 py-2 rounded-lg"
-                    onClick={() => onSwipe('right', m)}
-                    aria-label="Mark watched"
-                  >
-                    Watch
-                  </button>
-                  <button
+                    type="button"
                     className="bg-red-600 px-4 py-2 rounded-lg"
-                    onClick={() => onSwipe('left', m)}
-                    aria-label="Skip"
+                    onClick={() => onSwipe("left", movie)}
                   >
-                    Skip
+                    👎 Skip
+                  </button>
+
+                  <button
+                    type="button"
+                    className="bg-green-600 px-4 py-2 rounded-lg"
+                    onClick={() => onSwipe("right", movie)}
+                  >
+                    👍 Want to watch
                   </button>
                 </div>
               ) : null}
