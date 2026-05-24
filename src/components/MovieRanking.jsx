@@ -1,213 +1,119 @@
-import { createClient } from "@supabase/supabase-js"
-import { getUserId } from "../utils/userID"
+import { useEffect, useState } from "react"
+import {
+  getMovieRanking,
+  getMyVotes,
+  supabase,
+} from "../lib/supabaseClient"
 
-const url = import.meta.env.VITE_SUPABASE_URL
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+export default function MovieRanking({ lobbyId = "global" }) {
+  const [movies, setMovies] = useState([])
+  const [myVotes, setMyVotes] = useState({})
 
-export const supabase = url && anonKey ? createClient(url, anonKey) : null
+  async function load() {
+    const ranking = await getMovieRanking(lobbyId)
+    const votes = await getMyVotes(lobbyId)
 
-function handle(res) {
-  if (!res) return { error: "no-response" }
-  if (res.error) return { error: res.error }
-  return { data: res.data }
-}
+    const map = {}
 
-export async function addNomination(movie, nominatedBy = "local", lobbyId = "global") {
-  if (!supabase) return { error: "Supabase not configured" }
+    votes.forEach((vote) => {
+      map[vote.movie_id] = vote.vote
+    })
 
-  const payload = {
-    lobby_id: lobbyId,
-    movie_id: movie.id,
-    title: movie.title,
-    poster: movie.poster,
-    nominated_by: nominatedBy,
+    setMovies(ranking)
+    setMyVotes(map)
   }
 
-  const res = await supabase
-    .from("nominations")
-    .upsert(payload, { onConflict: "lobby_id,movie_id" })
-    .select()
+  useEffect(() => {
+    load()
 
-  return handle(res)
-}
+    if (!supabase) return
 
-export async function getNominations(lobbyId = "global") {
-  if (!supabase) return { error: "Supabase not configured" }
+    const channel = supabase
+      .channel("live-votes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "votes",
+        },
+        () => {
+          load()
+        }
+      )
+      .subscribe()
 
-  const res = await supabase
-    .from("nominations")
-    .select("*")
-    .eq("lobby_id", lobbyId)
-    .order("created_at", { ascending: false })
-
-  return handle(res)
-}
-
-export async function voteMovie(movie, vote, lobbyId = "global") {
-  if (!supabase) return { error: "Supabase not configured" }
-
-  const voter = getUserId()
-
-  const payload = {
-    lobby_id: lobbyId,
-    movie_id: movie.id,
-    title: movie.title,
-    poster: movie.poster,
-    voter,
-    vote,
-  }
-
-  const res = await supabase
-    .from("votes")
-    .upsert(payload, { onConflict: "lobby_id,movie_id,voter" })
-    .select()
-
-  return handle(res)
-}
-
-export async function getMovieRanking(lobbyId = "global") {
-  if (!supabase) return []
-
-  const { data, error } = await supabase
-    .from("votes")
-    .select("*")
-    .eq("lobby_id", lobbyId)
-
-  if (error) throw error
-
-  const grouped = {}
-
-  for (const row of data || []) {
-    if (!grouped[row.movie_id]) {
-      grouped[row.movie_id] = {
-        movieId: row.movie_id,
-        title: row.title,
-        poster: row.poster,
-        likes: 0,
-        dislikes: 0,
-      }
+    return () => {
+      supabase.removeChannel(channel)
     }
+  }, [lobbyId])
 
-    if (row.vote === "like") grouped[row.movie_id].likes += 1
-    if (row.vote === "dislike") grouped[row.movie_id].dislikes += 1
+  if (movies.length === 0) {
+    return null
   }
 
-  return Object.values(grouped)
-    .map((movie) => ({
-      ...movie,
-      totalVotes: movie.likes + movie.dislikes,
-      score: movie.likes - movie.dislikes,
-    }))
-    .sort((a, b) => b.likes - a.likes || b.score - a.score)
+  return (
+    <section className="mt-12">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-2xl font-bold">🏆 Group Ranking</h2>
+
+        <div className="text-sm text-neutral-400">
+          Most wanted movies by the group
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {movies.map((movie, index) => (
+          <div
+            key={movie.movieId}
+            className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex gap-4 items-center"
+          >
+            <div className="text-2xl font-bold text-neutral-500 w-10">
+              #{index + 1}
+            </div>
+
+            {movie.poster ? (
+              <img
+                src={movie.poster}
+                alt={movie.title}
+                className="w-16 rounded-lg"
+              />
+            ) : null}
+
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <h3 className="font-bold text-lg">{movie.title}</h3>
+
+                {myVotes[movie.movieId] === "like" ? (
+                  <span className="text-xs bg-green-700 px-2 py-1 rounded-full">
+                    You voted YES
+                  </span>
+                ) : null}
+
+                {myVotes[movie.movieId] === "dislike" ? (
+                  <span className="text-xs bg-red-700 px-2 py-1 rounded-full">
+                    You voted NO
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="flex gap-4 mt-2 text-sm">
+                <div className="text-green-400">
+                  👍 {movie.likes} want to watch
+                </div>
+
+                <div className="text-red-400">
+                  👎 {movie.dislikes} skip
+                </div>
+
+                <div className="text-neutral-400">
+                  Score {movie.score}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
 }
-
-export async function getMyVotes(lobbyId = "global") {
-  if (!supabase) return []
-
-  const voter = getUserId()
-
-  const { data, error } = await supabase
-    .from("votes")
-    .select("*")
-    .eq("lobby_id", lobbyId)
-    .eq("voter", voter)
-
-  if (error) throw error
-
-  return data || []
-}
-
-export async function setRating(movieId, rating, rater = "local") {
-  if (!supabase) return { error: "Supabase not configured" }
-
-  const res = await supabase
-    .from("ratings")
-    .upsert(
-      { movie_id: movieId, rating, rater },
-      { onConflict: "movie_id,rater" }
-    )
-    .select()
-
-  return handle(res)
-}
-
-export async function markWatchedWithRating(movie, watchedBy, rating = null) {
-  if (!supabase) return { error: "Supabase not configured" }
-
-  const res = await supabase
-    .from("watched")
-    .insert([
-      {
-        movie_id: movie.id,
-        title: movie.title,
-        poster: movie.poster,
-        watched_by: watchedBy,
-      },
-    ])
-    .select()
-
-  if (rating !== null && rating !== undefined) {
-    await setRating(movie.id, rating, watchedBy)
-  }
-
-  return handle(res)
-}
-
-export async function getWatched(rater = "local") {
-  if (!supabase) return { error: "Supabase not configured" }
-
-  const res = await supabase
-    .from("watched")
-    .select("*")
-    .order("watched_at", { ascending: false })
-
-  if (res.error) return handle(res)
-
-  const watched = res.data || []
-  const movieIds = watched.map((w) => w.movie_id).filter(Boolean)
-
-  if (movieIds.length === 0) return { data: watched }
-
-  const ratingsRes = await supabase
-    .from("ratings")
-    .select("*")
-    .in("movie_id", movieIds)
-
-  const ratings = ratingsRes.data || []
-
-  return {
-    data: watched.map((movie) => {
-      const movieRatings = ratings.filter((r) => r.movie_id === movie.movie_id)
-      const myRating = movieRatings.find((r) => r.rater === rater)
-
-      const avgRating =
-        movieRatings.length > 0
-          ? Math.round(
-              (movieRatings.reduce((sum, r) => sum + Number(r.rating), 0) /
-                movieRatings.length) *
-                10
-            ) / 10
-          : 0
-
-      return {
-        ...movie,
-        rating: myRating?.rating ?? 0,
-        avgRating,
-        ratingCount: movieRatings.length,
-      }
-    }),
-  }
-}
-
-export async function deleteWatchedByMovieId(movieId) {
-  if (!supabase) return { error: "Supabase not configured" }
-
-  const res = await supabase
-    .from("watched")
-    .delete()
-    .eq("movie_id", Number(movieId))
-
-  return handle(res)
-}
-
-export default supabase

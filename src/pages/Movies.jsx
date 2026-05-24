@@ -29,20 +29,30 @@ export default function Movies() {
   const deckRef = useRef(null)
   const apiKey = import.meta.env.VITE_TMDB_KEY
 
-  async function loadNominations() {
-    const res = await getNominations(LOBBY_ID)
+async function loadNominations() {
+  const nominationsRes = await getNominations(LOBBY_ID)
 
-    if (res?.data) {
-      const movies = res.data.map((n) => ({
-        id: n.movie_id,
-        title: n.title,
-        poster: n.poster,
-        nominated_by: n.nominated_by,
-      }))
+  if (!nominationsRes?.data) return
 
-      setQueue(movies)
-    }
-  }
+  const allMovies = nominationsRes.data.map((n) => ({
+    id: n.movie_id,
+    title: n.title,
+    poster: n.poster,
+    nominated_by: n.nominated_by,
+  }))
+
+  const myVotes = await getMyVotes(LOBBY_ID)
+
+  const votedIds = new Set(
+    myVotes.map((vote) => vote.movie_id)
+  )
+
+  const filtered = allMovies.filter(
+    (movie) => !votedIds.has(movie.id)
+  )
+
+  setQueue(filtered)
+}
 
   async function loadWatched() {
     const res = await getWatched(raterName)
@@ -87,31 +97,32 @@ export default function Movies() {
     setTimeout(() => setActionMessage(null), 2500)
   }
 
-  async function handleSwipe(direction, movie) {
-    const vote = direction === "right" ? "like" : "dislike"
+  async function handleSwipe(vote, movie) {
+  const res = await voteMovie(movie, vote, LOBBY_ID)
 
-    setViewed((current) => [{ movie, vote }, ...current])
-    setQueue((current) => current.filter((item) => item.id !== movie.id))
+  if (res?.error) {
+    setActionMessage({
+      type: "error",
+      text: "Vote could not be saved.",
+    })
 
-    const res = await voteMovie(movie, vote, LOBBY_ID)
-
-    if (res?.error) {
-      setActionMessage({
-        type: "error",
-        text: `Vote was not saved: ${String(res.error.message || res.error)}`,
-      })
-    } else {
-      setActionMessage({
-        type: "success",
-        text:
-          vote === "like"
-            ? `You liked "${movie.title}".`
-            : `You disliked "${movie.title}".`,
-      })
-    }
-
-    setTimeout(() => setActionMessage(null), 2000)
+    return
   }
+
+  setQueue((current) =>
+    current.filter((item) => item.id !== movie.id)
+  )
+
+  setActionMessage({
+    type: "success",
+    text:
+      vote === "like"
+        ? `You voted to watch "${movie.title}".`
+        : `You skipped "${movie.title}".`,
+  })
+
+  setTimeout(() => setActionMessage(null), 2200)
+}
 
   async function handleRating(movieId, rating) {
     await setRating(movieId, rating, raterName)
@@ -232,36 +243,6 @@ export default function Movies() {
       <section ref={deckRef} className="mb-8">
         <SwipeDeck movies={queue} onSwipe={handleSwipe} />
       </section>
-
-      {viewed.length > 0 ? (
-        <section className="mt-8">
-          <h2 className="text-xl mb-3">Your recent votes</h2>
-
-          <div className="space-y-3">
-            {viewed.map((item) => (
-              <div
-                key={`${item.movie.id}-${item.vote}`}
-                className="bg-neutral-800 p-3 rounded-lg flex gap-3 items-center"
-              >
-                {item.movie.poster ? (
-                  <img
-                    src={item.movie.poster}
-                    alt=""
-                    className="w-14 rounded"
-                  />
-                ) : null}
-
-                <div className="flex-1">
-                  <strong>{item.movie.title}</strong>
-                  <div className="text-sm text-neutral-400">
-                    Your vote: {item.vote === "like" ? "👍 Like" : "👎 Dislike"}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       <MovieRanking lobbyId={LOBBY_ID} />
 
