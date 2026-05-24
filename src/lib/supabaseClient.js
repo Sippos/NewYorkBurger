@@ -86,6 +86,17 @@ export async function resetVotesForVoter(lobbyId = "global", voterName = "") {
   return handle(res)
 }
 
+export async function resetAllVotes(lobbyId = "global") {
+  if (!supabase) return { error: "Supabase not configured" }
+
+  const res = await supabase
+    .from("votes")
+    .delete()
+    .eq("lobby_id", lobbyId)
+
+  return handle(res)
+}
+
 export async function getMovieRanking(lobbyId = "global") {
   if (!supabase) return []
 
