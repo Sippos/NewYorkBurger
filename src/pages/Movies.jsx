@@ -53,7 +53,7 @@ export default function Movies() {
       const votedIds = new Set(myVotes.map((vote) => vote.movie_id))
 
       setQueue(allMovies.filter((movie) => !votedIds.has(movie.id)))
-    } catch (error) {
+    } catch {
       setActionMessage({
         type: "error",
         text: "Could not load your previous movie votes.",
