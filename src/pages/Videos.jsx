@@ -12,20 +12,43 @@ export default function Videos() {
 
   const topVideos = useMemo(() => queue.slice(0, 20), [queue])
 
-  function addVideo(e) {
-    e.preventDefault()
-
+  function buildVideo() {
     const video = makeVideoFromLink({ url, title, channel })
 
     if (!video) {
-      window.alert("Paste a valid YouTube link")
-      return
+      window.alert("Paste a valid YouTube, TikTok, or Instagram link")
+      return null
     }
 
-    setQueue((current) => [video, ...current])
+    return video
+  }
+
+  function resetInputs() {
     setUrl("")
     setTitle("")
     setChannel("")
+  }
+
+  function addToVoting(e) {
+    e.preventDefault()
+
+    const video = buildVideo()
+    if (!video) return
+
+    setQueue((current) => [video, ...current])
+    resetInputs()
+  }
+
+  function addToClassics() {
+    const video = buildVideo()
+    if (!video) return
+
+    setClassics((current) => {
+      if (current.some((item) => item.id === video.id)) return current
+      return [video, ...current]
+    })
+
+    resetInputs()
   }
 
   function handleSwipe(vote, video) {
@@ -62,13 +85,13 @@ export default function Videos() {
           </h1>
 
           <p className="mt-2 text-neutral-400">
-            Paste YouTube links, swipe on videos, and keep legendary classics forever.
+            Paste YouTube, TikTok, or Instagram links. Add them to voting or instantly save them as all-time classics.
           </p>
 
-          <form onSubmit={addVideo} className="mt-5 space-y-3">
+          <form className="mt-5 space-y-3">
             <input
               className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none"
-              placeholder="Paste YouTube link"
+              placeholder="Paste YouTube / TikTok / Instagram link"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
@@ -83,15 +106,29 @@ export default function Videos() {
 
               <input
                 className="rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none"
-                placeholder="Channel or meme source"
+                placeholder="Channel / creator / meme source"
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
               />
             </div>
 
-            <button className="rounded-2xl bg-white px-5 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200">
-              Add video
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={addToVoting}
+                className="rounded-2xl bg-white px-5 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200"
+              >
+                Add to voting
+              </button>
+
+              <button
+                type="button"
+                onClick={addToClassics}
+                className="rounded-2xl border border-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white hover:text-neutral-950"
+              >
+                Save as classic
+              </button>
+            </div>
           </form>
         </section>
 
@@ -112,7 +149,7 @@ export default function Videos() {
           </div>
 
           {classics.length === 0 ? (
-            <p className="text-neutral-400">No classics yet. Swipe right on legendary videos.</p>
+            <p className="text-neutral-400">No classics yet.</p>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {classics.map((video) => (
@@ -123,10 +160,20 @@ export default function Videos() {
                   rel="noreferrer"
                   className="overflow-hidden rounded-3xl border border-white/10 bg-neutral-950/70 transition hover:border-white/30"
                 >
-                  <img src={video.poster} alt={video.title} className="h-52 w-full object-cover" />
+                  {video.poster ? (
+                    <img src={video.poster} alt={video.title} className="h-52 w-full object-cover" />
+                  ) : (
+                    <div className="flex h-52 items-center justify-center bg-neutral-900 text-neutral-500 uppercase tracking-[0.3em]">
+                      {video.platform}
+                    </div>
+                  )}
 
                   <div className="p-4">
-                    <div className="text-lg font-semibold leading-tight">{video.title}</div>
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-neutral-500">
+                      <span>{video.platform}</span>
+                    </div>
+
+                    <div className="mt-2 text-lg font-semibold leading-tight">{video.title}</div>
 
                     {video.channel ? (
                       <div className="mt-2 text-sm text-neutral-400">{video.channel}</div>
