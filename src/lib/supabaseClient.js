@@ -31,6 +31,8 @@ export async function addNomination(movie, nominatedBy = "local", lobbyId = "glo
   return handle(res)
 }
 
+export const nominateMovie = addNomination
+
 export async function getNominations(lobbyId = "global") {
   if (!supabase) return { error: "Supabase not configured" }
 
