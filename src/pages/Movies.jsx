@@ -18,6 +18,7 @@ import {
 
 const LOBBY_ID = "global"
 const BLOCKED_HANDLES = new Set(["ni", "nic"])
+const RATINGS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 function cleanHandle(handle) {
   return String(handle || "").trim()
@@ -175,6 +176,22 @@ export default function Movies() {
     setTimeout(() => setActionMessage(null), 2200)
   }
 
+  async function handleRestoreVoting(movie) {
+    if (!isAdmin) return
+
+    await resetVotesForVoter(LOBBY_ID, activeHandle)
+    await loadNominations()
+    setRankingRefreshKey((current) => current + 1)
+    setActionMessage({ type: "success", text: `Your voting cards were restored.` })
+    setTimeout(() => setActionMessage(null), 2200)
+  }
+
+  async function handleRemoveWatched(movieId) {
+    if (!isAdmin) return
+    await deleteWatchedByMovieId(movieId)
+    await loadWatched()
+  }
+
   useEffect(() => {
     refreshSavedHandles()
   }, [])
@@ -235,42 +252,34 @@ export default function Movies() {
   async function handleMarkWatched(movie) {
     if (!canUseApp) return
 
-    const answer = window.prompt("Rate this movie 0-10 optional", "8")
-    const rating = answer === null || answer === "" ? null : Number(answer)
-
-    if (rating !== null && Number.isNaN(rating)) {
-      setActionMessage({ type: "error", text: "Invalid rating." })
-      setTimeout(() => setActionMessage(null), 2000)
-      return
-    }
-
-    await markWatchedWithRating(movie, activeHandle, rating)
+    await markWatchedWithRating(movie, activeHandle, null)
     await loadWatched()
-    setActionMessage({ type: "success", text: `Marked "${movie.title}" as watched.` })
+    setActionMessage({ type: "success", text: `"${movie.title}" moved to watched.` })
     setTimeout(() => setActionMessage(null), 2500)
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 px-4 py-4 text-white md:px-6">
+    <div className="min-h-screen bg-neutral-950 px-3 py-3 text-white sm:px-4 md:px-6">
       <div className="mx-auto max-w-5xl">
-        <header className="sticky top-3 z-30 mb-6 rounded-full border border-white/10 bg-neutral-950/80 px-4 py-3 shadow-2xl shadow-black/30 backdrop-blur">
-          <div className="flex items-center justify-between gap-3">
+        <header className="sticky top-3 z-30 mb-5 rounded-full border border-white/10 bg-neutral-950/80 px-3 py-2 shadow-2xl shadow-black/30 backdrop-blur sm:px-4 sm:py-3">
+          <div className="flex items-center justify-between gap-2">
             <Link to="/" className="text-sm font-semibold tracking-tight text-white">
               Movie Night
             </Link>
-            <nav className="flex items-center gap-1 rounded-full bg-white/[0.04] p-1 text-sm text-neutral-300">
-              <Link to="/" className="rounded-full px-3 py-1.5 hover:bg-white/10 hover:text-white">Home</Link>
-              <Link to="/movies" className="rounded-full bg-white px-3 py-1.5 font-medium text-neutral-950">Movies</Link>
+            <nav className="flex items-center gap-1 rounded-full bg-white/[0.04] p-1 text-xs text-neutral-300 sm:text-sm">
+              <Link to="/" className="rounded-full px-2.5 py-1.5 hover:bg-white/10 hover:text-white sm:px-3">Home</Link>
+              <Link to="/movies" className="rounded-full bg-white px-2.5 py-1.5 font-medium text-neutral-950 sm:px-3">Movies</Link>
             </nav>
             <div className="hidden text-xs uppercase tracking-[0.2em] text-neutral-500 sm:block">{LOBBY_ID}</div>
           </div>
         </header>
 
-        <section className="mb-6 rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20 md:p-5">
+        <section className="mb-5 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20 sm:rounded-[1.75rem] md:p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
-              <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Movie night</p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Pick what to watch</h1>
+              <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Movie night</p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">Pick what to watch</h1>
+              {!activeHandle ? <p className="mt-1 text-sm text-neutral-500">Choose your handle to start voting.</p> : null}
             </div>
 
             {isChoosingHandle ? (
@@ -297,7 +306,7 @@ export default function Movies() {
                 ) : null}
               </div>
             ) : (
-              <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-neutral-950/70 px-3 py-2">
+              <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-neutral-950/70 px-2 py-2 sm:px-3">
                 <span className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-neutral-950">{activeHandle}</span>
                 <button type="button" className="rounded-full px-3 py-1.5 text-sm text-neutral-300 transition hover:bg-white/10 hover:text-white" onClick={switchHandle}>Switch</button>
                 {isAdmin ? (
@@ -322,7 +331,7 @@ export default function Movies() {
               {hasResults ? (
                 <button type="button" className="rounded-2xl border border-white/10 px-4 py-3 font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950" onClick={clearSearch}>Back</button>
               ) : null}
-              <button disabled={!canUseApp} className="rounded-2xl bg-white px-5 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:opacity-40">Search</button>
+              <button disabled={!canUseApp} className="rounded-2xl bg-white px-4 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:opacity-40 sm:px-5">Search</button>
             </div>
           </form>
         </section>
@@ -361,22 +370,58 @@ export default function Movies() {
           </>
         ) : null}
 
-        <section className="mt-8">
-          <h2 className="mb-3 text-xl">Watched</h2>
+        <section className="mt-8 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">After watching</p>
+              <h2 className="mt-1 text-2xl font-semibold">Watched ranking</h2>
+            </div>
+            <div className="text-sm text-neutral-500">Sorted by average rating</div>
+          </div>
           {watched.length === 0 ? <p className="text-neutral-400">No watched movies yet.</p> : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {watched.map((movie) => (
-                <div key={movie.id} className="flex items-start gap-3 rounded-2xl bg-neutral-900 p-3">
-                  {movie.poster ? <img src={movie.poster} alt="" className="w-20 rounded-xl" /> : null}
-                  <div className="flex-1">
-                    <strong>{movie.title}</strong>
-                    <div className="mt-2">
-                      <input type="range" min="0" max="10" value={movie.rating ?? 0} onChange={(e) => handleRating(movie.movie_id, Number(e.target.value))} />
-                      <div className="text-sm">Your rating: {movie.rating ?? 0}</div>
-                      <div className="text-xs text-neutral-400">Avg: {movie.avgRating ?? 0} ({movie.ratingCount ?? 0})</div>
+                <div key={movie.id} className="rounded-3xl border border-white/10 bg-neutral-950/70 p-3">
+                  <div className="flex gap-3">
+                    {movie.poster ? <img src={movie.poster} alt="" className="h-28 w-20 shrink-0 rounded-2xl object-cover" /> : null}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <strong className="line-clamp-2 text-lg leading-tight">{movie.title}</strong>
+                        <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-neutral-950">
+                          {movie.avgRating === null ? "No rating" : `${movie.avgRating}/10`}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-xs text-neutral-500">
+                        {movie.ratingCount || 0} rating{movie.ratingCount === 1 ? "" : "s"}
+                      </div>
+                      <div className="mt-3 grid grid-cols-5 gap-1.5">
+                        {RATINGS.map((rating) => (
+                          <button
+                            key={rating}
+                            type="button"
+                            className={`rounded-xl border px-0 py-2 text-sm font-semibold transition ${
+                              Number(movie.rating) === rating
+                                ? "border-white bg-white text-neutral-950"
+                                : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/30"
+                            }`}
+                            onClick={() => handleRating(movie.movie_id, rating)}
+                          >
+                            {rating}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <button className="mt-3 text-sm text-red-400" onClick={async () => { await deleteWatchedByMovieId(movie.movie_id); await loadWatched() }}>Delete</button>
                   </div>
+                  {isAdmin ? (
+                    <div className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-3">
+                      <button type="button" className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-neutral-300 hover:bg-white hover:text-neutral-950" onClick={() => handleRestoreVoting(movie)}>
+                        Restore voting cards
+                      </button>
+                      <button type="button" className="rounded-full border border-red-400/30 px-3 py-1.5 text-xs text-red-300 hover:bg-red-400 hover:text-neutral-950" onClick={() => handleRemoveWatched(movie.movie_id)}>
+                        Remove watched
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
