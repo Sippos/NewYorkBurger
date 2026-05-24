@@ -6,6 +6,7 @@ import { searchMovies } from "../lib/tmdb"
 import {
   addNomination,
   deleteWatchedByMovieId,
+  getMyVotes,
   getNominations,
   getWatched,
   markWatchedWithRating,
@@ -19,7 +20,6 @@ export default function Movies() {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState([])
   const [queue, setQueue] = useState([])
-  const [viewed, setViewed] = useState([])
   const [watched, setWatched] = useState([])
   const [actionMessage, setActionMessage] = useState(null)
   const [raterName, setRaterName] = useState(
@@ -29,30 +29,37 @@ export default function Movies() {
   const deckRef = useRef(null)
   const apiKey = import.meta.env.VITE_TMDB_KEY
 
-async function loadNominations() {
-  const nominationsRes = await getNominations(LOBBY_ID)
+  async function loadNominations() {
+    try {
+      const nominationsRes = await getNominations(LOBBY_ID)
 
-  if (!nominationsRes?.data) return
+      if (nominationsRes?.error) {
+        setActionMessage({
+          type: "error",
+          text: "Could not load movie nominations.",
+        })
+        return
+      }
 
-  const allMovies = nominationsRes.data.map((n) => ({
-    id: n.movie_id,
-    title: n.title,
-    poster: n.poster,
-    nominated_by: n.nominated_by,
-  }))
+      const allMovies = (nominationsRes?.data || []).map((n) => ({
+        id: n.movie_id,
+        title: n.title,
+        poster: n.poster,
+        nominated_by: n.nominated_by,
+      }))
 
-  const myVotes = await getMyVotes(LOBBY_ID)
+      const myVotes = await getMyVotes(LOBBY_ID)
 
-  const votedIds = new Set(
-    myVotes.map((vote) => vote.movie_id)
-  )
+      const votedIds = new Set(myVotes.map((vote) => vote.movie_id))
 
-  const filtered = allMovies.filter(
-    (movie) => !votedIds.has(movie.id)
-  )
-
-  setQueue(filtered)
-}
+      setQueue(allMovies.filter((movie) => !votedIds.has(movie.id)))
+    } catch (error) {
+      setActionMessage({
+        type: "error",
+        text: "Could not load your previous movie votes.",
+      })
+    }
+  }
 
   async function loadWatched() {
     const res = await getWatched(raterName)
@@ -61,8 +68,11 @@ async function loadNominations() {
 
   useEffect(() => {
     loadNominations()
-    loadWatched()
   }, [])
+
+  useEffect(() => {
+    loadWatched()
+  }, [raterName])
 
   async function handleSearch(e) {
     e.preventDefault()
@@ -98,31 +108,29 @@ async function loadNominations() {
   }
 
   async function handleSwipe(vote, movie) {
-  const res = await voteMovie(movie, vote, LOBBY_ID)
+    const res = await voteMovie(movie, vote, LOBBY_ID)
 
-  if (res?.error) {
+    if (res?.error) {
+      setActionMessage({
+        type: "error",
+        text: "Vote could not be saved.",
+      })
+
+      return
+    }
+
+    setQueue((current) => current.filter((item) => item.id !== movie.id))
+
     setActionMessage({
-      type: "error",
-      text: "Vote could not be saved.",
+      type: "success",
+      text:
+        vote === "like"
+          ? `You voted to watch "${movie.title}".`
+          : `You skipped "${movie.title}".`,
     })
 
-    return
+    setTimeout(() => setActionMessage(null), 2200)
   }
-
-  setQueue((current) =>
-    current.filter((item) => item.id !== movie.id)
-  )
-
-  setActionMessage({
-    type: "success",
-    text:
-      vote === "like"
-        ? `You voted to watch "${movie.title}".`
-        : `You skipped "${movie.title}".`,
-  })
-
-  setTimeout(() => setActionMessage(null), 2200)
-}
 
   async function handleRating(movieId, rating) {
     await setRating(movieId, rating, raterName)
