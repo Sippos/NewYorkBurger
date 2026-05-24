@@ -21,6 +21,7 @@ export default function Movies() {
   const [results, setResults] = useState([])
   const [queue, setQueue] = useState([])
   const [watched, setWatched] = useState([])
+  const [rankingRefreshKey, setRankingRefreshKey] = useState(0)
   const [actionMessage, setActionMessage] = useState(null)
   const [raterName, setRaterName] = useState(
     () => localStorage.getItem("rater") || "local"
@@ -120,6 +121,7 @@ export default function Movies() {
     }
 
     setQueue((current) => current.filter((item) => item.id !== movie.id))
+    setRankingRefreshKey((current) => current + 1)
 
     setActionMessage({
       type: "success",
@@ -169,7 +171,7 @@ export default function Movies() {
         </Link>
       </div>
 
-      <h1 className="text-3xl mb-6">🎬 Movie Vote</h1>
+      <h1 className="text-3xl mb-6">Movie Vote</h1>
 
       <div className="mb-4 flex items-center gap-3">
         <label className="text-sm text-neutral-400">Your name:</label>
@@ -252,7 +254,7 @@ export default function Movies() {
         <SwipeDeck movies={queue} onSwipe={handleSwipe} />
       </section>
 
-      <MovieRanking lobbyId={LOBBY_ID} />
+      <MovieRanking lobbyId={LOBBY_ID} refreshKey={rankingRefreshKey} />
 
       <section className="mt-8">
         <h2 className="text-xl mb-3">Watched</h2>
