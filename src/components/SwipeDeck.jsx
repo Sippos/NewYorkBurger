@@ -5,6 +5,9 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
   const pointer = useRef({ x: 0, y: 0 })
 
   const topMovie = movies[0]
+  const dragX = drag?.dx || 0
+  const watchOpacity = Math.min(Math.max(dragX / 110, 0), 1)
+  const passOpacity = Math.min(Math.max(-dragX / 110, 0), 1)
 
   const handlePointerDown = (e) => {
     const p = e.touches ? e.touches[0] : e
@@ -14,10 +17,7 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
       y: p.clientY,
     }
 
-    setDrag({
-      dx: 0,
-      dy: 0,
-    })
+    setDrag({ dx: 0, dy: 0 })
   }
 
   const handlePointerMove = (e) => {
@@ -36,44 +36,36 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
 
     const threshold = 120
 
-    if (drag.dx > threshold) {
-      onSwipe("like", movie)
-    } else if (drag.dx < -threshold) {
-      onSwipe("dislike", movie)
-    }
+    if (drag.dx > threshold) onSwipe("like", movie)
+    if (drag.dx < -threshold) onSwipe("dislike", movie)
 
     setDrag(null)
   }
 
   if (movies.length === 0) {
     return (
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 text-center text-neutral-400">
-        <div className="text-4xl mb-3">🍿</div>
-
-        <h3 className="text-xl mb-2">No movies left to vote on</h3>
-
-        <p className="text-sm text-neutral-500">
-          Search and add movies above to start the group voting.
+      <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-10 text-center shadow-2xl shadow-black/20">
+        <h3 className="text-xl font-semibold text-white">No movies left to vote on</h3>
+        <p className="mt-2 text-sm text-neutral-500">
+          Add more movies to the pile or check the ranking below.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="w-full max-w-xl mx-auto">
-      <div className="mb-4 text-center">
-        <h2 className="text-2xl font-bold mb-2">Group Watch Voting</h2>
-
-        <div className="flex justify-center gap-6 text-sm text-neutral-400">
-          <div>👈 Swipe left = Skip</div>
-          <div>👉 Swipe right = Want to watch</div>
-        </div>
+    <div className="mx-auto w-full max-w-xl">
+      <div className="mb-5 text-center">
+        <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Swipe deck</p>
+        <h2 className="mt-2 text-3xl font-semibold">Your movie pile</h2>
+        <p className="mt-2 text-sm text-neutral-400">
+          Drag the top card left to pass or right to watch.
+        </p>
       </div>
 
-      <div className="relative h-[560px]">
+      <div className="relative h-[620px]">
         {movies.map((movie, index) => {
           const isTop = movie.id === topMovie.id
-
           const rotation = drag ? drag.dx / 18 : 0
 
           const style =
@@ -83,22 +75,17 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
                   transition: "transform 0s",
                 }
               : {
-                  transform: `scale(${1 - index * 0.03}) translateY(${
-                    index * 12
-                  }px)`,
+                  transform: `scale(${1 - index * 0.035}) translateY(${index * 14}px)`,
                   transition: "transform 250ms ease",
                 }
 
           return (
             <div
               key={movie.id}
-              className={`absolute left-0 right-0 mx-auto w-[340px] bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl ${
-                isTop ? "cursor-grab" : "pointer-events-none"
+              className={`absolute left-0 right-0 mx-auto w-[350px] select-none overflow-hidden rounded-[2rem] border border-white/10 bg-neutral-950 shadow-2xl shadow-black/40 ${
+                isTop ? "cursor-grab active:cursor-grabbing" : "pointer-events-none"
               }`}
-              style={{
-                ...style,
-                zIndex: movies.length - index,
-              }}
+              style={{ ...style, zIndex: movies.length - index }}
               onMouseDown={isTop ? handlePointerDown : undefined}
               onMouseMove={isTop ? handlePointerMove : undefined}
               onMouseUp={isTop ? () => handlePointerUp(movie) : undefined}
@@ -107,60 +94,63 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
               onTouchMove={isTop ? handlePointerMove : undefined}
               onTouchEnd={isTop ? () => handlePointerUp(movie) : undefined}
             >
-              <div className="relative">
+              <div className="relative h-[440px] bg-neutral-900">
                 {movie.poster ? (
                   <img
                     src={movie.poster}
                     alt={movie.title}
-                    className="w-full h-[420px] object-cover"
+                    draggable="false"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-[420px] bg-neutral-800" />
+                  <div className="h-full w-full bg-neutral-800" />
                 )}
 
-                {isTop && drag?.dx > 40 ? (
-                  <div className="absolute top-8 right-6 rotate-12 border-4 border-green-400 text-green-400 font-bold text-3xl px-4 py-2 rounded-xl bg-black/30">
-                    WANT TO WATCH
-                  </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+
+                {isTop ? (
+                  <>
+                    <div
+                      className="absolute left-6 top-8 -rotate-12 rounded-2xl border-4 border-rose-300 px-5 py-2 text-3xl font-black uppercase tracking-wide text-rose-300"
+                      style={{ opacity: passOpacity }}
+                    >
+                      Pass
+                    </div>
+                    <div
+                      className="absolute right-6 top-8 rotate-12 rounded-2xl border-4 border-emerald-300 px-5 py-2 text-3xl font-black uppercase tracking-wide text-emerald-300"
+                      style={{ opacity: watchOpacity }}
+                    >
+                      Watch
+                    </div>
+                  </>
                 ) : null}
 
-                {isTop && drag?.dx < -40 ? (
-                  <div className="absolute top-8 left-6 -rotate-12 border-4 border-red-400 text-red-400 font-bold text-3xl px-4 py-2 rounded-xl bg-black/30">
-                    SKIP
-                  </div>
-                ) : null}
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <h3 className="text-3xl font-bold leading-tight">{movie.title}</h3>
+                  {movie.year ? <div className="mt-1 text-neutral-300">{movie.year}</div> : null}
+                  {movie.nominated_by ? (
+                    <div className="mt-2 text-xs uppercase tracking-[0.2em] text-neutral-400">
+                      Added by {movie.nominated_by}
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
-              <div className="p-5">
-                <h3 className="text-2xl font-bold">{movie.title}</h3>
-
-                {movie.year ? (
-                  <div className="text-neutral-400 mt-1">
-                    {movie.year}
-                  </div>
-                ) : null}
-
-                {movie.nominated_by ? (
-                  <div className="text-xs text-neutral-500 mt-2">
-                    Added by {movie.nominated_by}
-                  </div>
-                ) : null}
-
-                <div className="flex gap-3 mt-5">
-                  <button
-                    className="flex-1 bg-red-600 hover:bg-red-500 transition rounded-xl py-3 font-semibold"
-                    onClick={() => onSwipe("dislike", movie)}
-                  >
-                    👎 Skip
-                  </button>
-
-                  <button
-                    className="flex-1 bg-green-600 hover:bg-green-500 transition rounded-xl py-3 font-semibold"
-                    onClick={() => onSwipe("like", movie)}
-                  >
-                    👍 Want to Watch
-                  </button>
-                </div>
+              <div className="grid grid-cols-2 gap-3 p-4">
+                <button
+                  type="button"
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950"
+                  onClick={() => onSwipe("dislike", movie)}
+                >
+                  Pass
+                </button>
+                <button
+                  type="button"
+                  className="rounded-2xl bg-white px-4 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200"
+                  onClick={() => onSwipe("like", movie)}
+                >
+                  Watch
+                </button>
               </div>
             </div>
           )
