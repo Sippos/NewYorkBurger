@@ -69,6 +69,7 @@ export default function Movies() {
   const apiKey = import.meta.env.VITE_TMDB_KEY
   const hasResults = results.length > 0
   const canUseApp = Boolean(activeHandle)
+  const isAdmin = activeHandle.trim().toLowerCase() === "sip"
 
   function refreshSavedHandles() {
     const cleaned = getSavedHandles()
@@ -137,7 +138,7 @@ export default function Movies() {
   }
 
   async function handleResetVotes() {
-    if (!activeHandle) return
+    if (!activeHandle || !isAdmin) return
 
     const ok = window.confirm(`Reset all votes for "${activeHandle}" in this lobby?`)
     if (!ok) return
@@ -156,6 +157,8 @@ export default function Movies() {
   }
 
   async function handleResetAllVotes() {
+    if (!isAdmin) return
+
     const ok = window.confirm("Reset all votes for everyone in this lobby? This is only for testing.")
     if (!ok) return
 
@@ -248,77 +251,70 @@ export default function Movies() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 p-5 text-white md:p-8">
+    <div className="min-h-screen bg-neutral-950 px-4 py-4 text-white md:px-6">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center justify-between text-sm text-neutral-300">
-          <div className="flex gap-4">
-            <Link to="/" className="hover:text-white">Home</Link>
-            <Link to="/movies" className="hover:text-white">Movies</Link>
+        <header className="sticky top-3 z-30 mb-6 rounded-full border border-white/10 bg-neutral-950/80 px-4 py-3 shadow-2xl shadow-black/30 backdrop-blur">
+          <div className="flex items-center justify-between gap-3">
+            <Link to="/" className="text-sm font-semibold tracking-tight text-white">
+              Movie Night
+            </Link>
+            <nav className="flex items-center gap-1 rounded-full bg-white/[0.04] p-1 text-sm text-neutral-300">
+              <Link to="/" className="rounded-full px-3 py-1.5 hover:bg-white/10 hover:text-white">Home</Link>
+              <Link to="/movies" className="rounded-full bg-white px-3 py-1.5 font-medium text-neutral-950">Movies</Link>
+            </nav>
+            <div className="hidden text-xs uppercase tracking-[0.2em] text-neutral-500 sm:block">{LOBBY_ID}</div>
           </div>
-          <div className="text-neutral-500">Lobby: {LOBBY_ID}</div>
-        </div>
+        </header>
 
-        <div className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.03] p-5 shadow-2xl shadow-black/20 md:p-7">
-          <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Movie night</p>
-          <h1 className="mt-2 text-4xl font-semibold tracking-tight">Pick what to watch</h1>
-          <p className="mt-3 max-w-2xl text-neutral-400">
-            Choose a handle first. Your swipes are stored under that handle.
-          </p>
+        <section className="mb-6 rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20 md:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Movie night</p>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Pick what to watch</h1>
+            </div>
 
-          {isChoosingHandle ? (
-            <div className="mt-6 rounded-3xl border border-white/10 bg-neutral-950/60 p-4">
-              <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-neutral-500">Create or choose handle</label>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none transition focus:border-white/30"
-                  value={draftHandle}
-                  onChange={(e) => setDraftHandle(e.target.value)}
-                  placeholder="for example sip"
-                />
-                <button
-                  type="button"
-                  className="rounded-2xl bg-white px-5 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200"
-                  onClick={() => continueAs()}
-                >
-                  Continue
-                </button>
-              </div>
-
-              {savedHandles.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {savedHandles.map((handle) => (
-                    <button
-                      key={handle}
-                      type="button"
-                      className="rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-300 transition hover:border-white/30 hover:text-white"
-                      onClick={() => continueAs(handle)}
-                    >
-                      Continue as {handle}
-                    </button>
-                  ))}
+            {isChoosingHandle ? (
+              <div className="w-full rounded-3xl border border-white/10 bg-neutral-950/70 p-3 lg:max-w-xl">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none transition focus:border-white/30"
+                    value={draftHandle}
+                    onChange={(e) => setDraftHandle(e.target.value)}
+                    placeholder="Choose handle"
+                  />
+                  <button type="button" className="rounded-2xl bg-white px-5 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200" onClick={() => continueAs()}>
+                    Continue
+                  </button>
                 </div>
-              ) : null}
-            </div>
-          ) : (
-            <div className="mt-6 flex flex-col gap-3 rounded-3xl border border-white/10 bg-neutral-950/60 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Voting as</div>
-                <div className="mt-1 text-2xl font-semibold">{activeHandle}</div>
+                {savedHandles.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {savedHandles.map((handle) => (
+                      <button key={handle} type="button" className="rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-300 transition hover:border-white/30 hover:text-white" onClick={() => continueAs(handle)}>
+                        {handle}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" className="rounded-2xl border border-white/10 px-4 py-2 text-sm hover:bg-white hover:text-neutral-950" onClick={switchHandle}>Switch handle</button>
-                <button type="button" className="rounded-2xl border border-white/10 px-4 py-2 text-sm text-neutral-300 hover:bg-white hover:text-neutral-950" onClick={handleResetVotes}>Reset my votes</button>
-                <button type="button" className="rounded-2xl border border-red-400/30 px-4 py-2 text-sm text-red-300 hover:bg-red-400 hover:text-neutral-950" onClick={handleResetAllVotes}>Reset all votes</button>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-neutral-950/70 px-3 py-2">
+                <span className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-neutral-950">{activeHandle}</span>
+                <button type="button" className="rounded-full px-3 py-1.5 text-sm text-neutral-300 transition hover:bg-white/10 hover:text-white" onClick={switchHandle}>Switch</button>
+                {isAdmin ? (
+                  <>
+                    <button type="button" className="rounded-full px-3 py-1.5 text-sm text-neutral-400 transition hover:bg-white/10 hover:text-white" onClick={handleResetVotes}>Reset mine</button>
+                    <button type="button" className="rounded-full px-3 py-1.5 text-sm text-red-300 transition hover:bg-red-400 hover:text-neutral-950" onClick={handleResetAllVotes}>Reset all</button>
+                  </>
+                ) : null}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          <form onSubmit={handleSearch} className="mt-5">
-            <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-neutral-500">Search movies</label>
+          <form onSubmit={handleSearch} className="mt-4">
             <div className="flex gap-2">
               <input
                 className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none transition focus:border-white/30 disabled:opacity-40"
-                placeholder={canUseApp ? "Movie title..." : "Choose a handle first"}
+                placeholder={canUseApp ? "Search a movie..." : "Choose a handle first"}
                 value={query}
                 disabled={!canUseApp}
                 onChange={(e) => setQuery(e.target.value)}
@@ -329,7 +325,7 @@ export default function Movies() {
               <button disabled={!canUseApp} className="rounded-2xl bg-white px-5 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:opacity-40">Search</button>
             </div>
           </form>
-        </div>
+        </section>
 
         {!apiKey ? <div className="mb-4 rounded-2xl bg-yellow-500 p-3 text-black">TMDB API key missing. Add VITE_TMDB_KEY to your .env file.</div> : null}
         {actionMessage ? <div className={`mb-4 rounded-2xl p-3 ${actionMessage.type === "error" ? "bg-red-600" : "bg-emerald-700"}`}>{actionMessage.text}</div> : null}
