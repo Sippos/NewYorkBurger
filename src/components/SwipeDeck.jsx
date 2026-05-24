@@ -1,6 +1,11 @@
 import { useRef, useState } from "react"
 
-export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
+export default function SwipeDeck({
+  movies = [],
+  onSwipe = () => {},
+  itemLabel = "movies",
+  emptyLabel = null,
+}) {
   const [drag, setDrag] = useState(null)
   const pointer = useRef({ x: 0, y: 0 })
 
@@ -45,9 +50,11 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
   if (movies.length === 0) {
     return (
       <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-10 text-center shadow-2xl shadow-black/20">
-        <h3 className="text-xl font-semibold text-white">No movies left to vote on</h3>
+        <h3 className="text-xl font-semibold text-white">
+          {emptyLabel || `No ${itemLabel} left to vote on`}
+        </h3>
         <p className="mt-2 text-sm text-neutral-500">
-          Add more movies to the pile or check the ranking below.
+          Add more {itemLabel} to the pile or check the ranking below.
         </p>
       </div>
     )
@@ -57,7 +64,7 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
     <div className="mx-auto w-full max-w-xl">
       <div className="mb-5 text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Swipe deck</p>
-        <h2 className="mt-2 text-3xl font-semibold">Your movie pile</h2>
+        <h2 className="mt-2 text-3xl font-semibold">Your {itemLabel} pile</h2>
         <p className="mt-2 text-sm text-neutral-400">
           Drag the top card left to pass or right to watch.
         </p>
@@ -103,7 +110,9 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="h-full w-full bg-neutral-800" />
+                  <div className="flex h-full w-full items-center justify-center bg-neutral-800 text-neutral-500 uppercase tracking-[0.25em]">
+                    {movie.platform || itemLabel}
+                  </div>
                 )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
@@ -128,6 +137,7 @@ export default function SwipeDeck({ movies = [], onSwipe = () => {} }) {
                 <div className="absolute bottom-0 left-0 right-0 p-5">
                   <h3 className="text-3xl font-bold leading-tight">{movie.title}</h3>
                   {movie.year ? <div className="mt-1 text-neutral-300">{movie.year}</div> : null}
+                  {movie.platform ? <div className="mt-1 text-neutral-300 capitalize">{movie.platform}</div> : null}
                   {movie.nominated_by ? (
                     <div className="mt-2 text-xs uppercase tracking-[0.2em] text-neutral-400">
                       Added by {movie.nominated_by}
