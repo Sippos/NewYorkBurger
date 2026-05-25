@@ -39,7 +39,8 @@ export default function PageNav({ active = "home" }) {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="flex h-11 min-w-[52px] items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:bg-white hover:text-black"
+            aria-label="Account"
+            className="flex h-11 min-w-[54px] items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:bg-white hover:text-black"
           >
             {handle || "+"}
           </button>
@@ -52,7 +53,9 @@ export default function PageNav({ active = "home" }) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <div className="text-xs uppercase tracking-[0.3em] text-neutral-500">Account</div>
-                <h2 className="mt-1 text-2xl font-bold">Choose handle</h2>
+                <h2 className="mt-1 text-2xl font-bold">
+                  {handle ? "Your handle" : "Create handle"}
+                </h2>
               </div>
 
               <button
@@ -65,14 +68,14 @@ export default function PageNav({ active = "home" }) {
             </div>
 
             <p className="mt-3 text-sm text-neutral-400">
-              Your handle is shared across movies and videos.
+              Your handle is used everywhere across movies and videos.
             </p>
 
             <input
               autoFocus
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Enter handle"
+              placeholder="Choose a handle"
               className="mt-5 w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none"
             />
 
@@ -81,7 +84,7 @@ export default function PageNav({ active = "home" }) {
               onClick={saveHandle}
               className="mt-4 w-full rounded-2xl bg-white px-5 py-3 font-semibold text-black"
             >
-              Save handle
+              {handle ? "Save changes" : "Create account"}
             </button>
           </div>
         </div>
