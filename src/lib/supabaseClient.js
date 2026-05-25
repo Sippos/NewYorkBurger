@@ -131,6 +131,15 @@ export async function addVideoLink(video, uploadedBy = "local", isClassic = fals
   return handle(await supabase.from("video_links").upsert(payload, { onConflict: "id" }).select())
 }
 
+export async function updateVideoLink(videoId, updates = {}) {
+  if (!supabase) return { error: "Supabase not configured" }
+
+  const allowed = ["title", "url", "poster", "platform", "is_classic"]
+  const payload = Object.fromEntries(Object.entries(updates).filter(([key]) => allowed.includes(key)))
+
+  return handle(await supabase.from("video_links").update(payload).eq("id", videoId).select())
+}
+
 export async function setVideoClassic(videoId, isClassic = true) {
   if (!supabase) return { error: "Supabase not configured" }
   return handle(await supabase.from("video_links").update({ is_classic: isClassic }).eq("id", videoId).select())
