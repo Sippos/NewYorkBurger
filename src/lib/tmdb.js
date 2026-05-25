@@ -1,3 +1,14 @@
+function mapMovie(m) {
+  return {
+    id: m.id,
+    title: m.title,
+    year: m.release_date ? m.release_date.split('-')[0] : '',
+    poster: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+    overview: m.overview || '',
+    tmdbRating: m.vote_average ?? null,
+  }
+}
+
 export async function fetchPopularMovies(apiKey, page = 1) {
   if (!apiKey) {
     return []
@@ -9,13 +20,7 @@ export async function fetchPopularMovies(apiKey, page = 1) {
   if (!res.ok) return []
   const data = await res.json()
 
-  return data.results.map((m) => ({
-    id: m.id,
-    title: m.title,
-    year: m.release_date ? m.release_date.split('-')[0] : '',
-    poster: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
-    tmdbRating: m.vote_average ?? null,
-  }))
+  return data.results.map(mapMovie)
 }
 
 export default fetchPopularMovies
@@ -30,13 +35,7 @@ export async function searchMovies(apiKey, query, page = 1) {
   if (!res.ok) return []
   const data = await res.json()
 
-  return data.results.map((m) => ({
-    id: m.id,
-    title: m.title,
-    year: m.release_date ? m.release_date.split('-')[0] : '',
-    poster: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
-    tmdbRating: m.vote_average ?? null,
-  }))
+  return data.results.map(mapMovie)
 }
 
 export async function getExternalIds(apiKey, movieId) {
