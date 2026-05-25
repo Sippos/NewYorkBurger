@@ -39,11 +39,16 @@ export default function App() {
               <PageNav active="home" />
 
               <div className="flex flex-1 flex-col items-center justify-center py-10">
-                <div className="mb-10 w-full overflow-hidden">
+                <div className="hero-title-wrap mb-10 w-full overflow-hidden">
                   <h1 className="hero-title text-center font-black italic tracking-tight text-white sm:text-6xl md:text-7xl">
-                    NEW YORK
+                    <span>NEW YORK</span>
                     <span className="mx-2 inline-block text-red-600 sm:mx-3">★</span>
-                    BURGER
+                    <span>BURGER</span>
+                    <span className="hero-title-repeat" aria-hidden="true">
+                      <span>NEW YORK</span>
+                      <span className="mx-2 inline-block text-red-600 sm:mx-3">★</span>
+                      <span>BURGER</span>
+                    </span>
                   </h1>
                 </div>
 
@@ -54,21 +59,37 @@ export default function App() {
                     white-space: nowrap;
                   }
 
+                  .hero-title-repeat {
+                    display: none;
+                  }
+
                   @media (max-width: 430px) {
+                    .hero-title-wrap {
+                      margin-left: -0.75rem;
+                      margin-right: -0.75rem;
+                      width: calc(100% + 1.5rem);
+                    }
+
                     .hero-title {
-                      display: inline-block;
+                      display: inline-flex;
                       min-width: max-content;
-                      animation: heroSlide 4.5s linear infinite;
+                      animation: heroSlide 3.6s linear infinite;
+                      gap: 2rem;
+                    }
+
+                    .hero-title-repeat {
+                      display: inline-flex;
+                      align-items: center;
                     }
                   }
 
                   @keyframes heroSlide {
-                    0%, 10% {
+                    from {
                       transform: translateX(0);
                     }
 
-                    90%, 100% {
-                      transform: translateX(calc(-100% + 100vw - 1.5rem));
+                    to {
+                      transform: translateX(calc(-50% - 1rem));
                     }
                   }
                 `}</style>
