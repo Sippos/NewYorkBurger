@@ -34,16 +34,42 @@ export default function App() {
       <Route
         path="/"
         element={
-          <main className="min-h-screen bg-neutral-950 px-3 py-3 text-white sm:px-4 md:px-6">
+          <main className="min-h-screen overflow-x-hidden bg-neutral-950 px-3 py-3 text-white sm:px-4 md:px-6">
             <div className="mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-5xl flex-col">
-              <PageNav title="New York Burger" active="home" />
+              <PageNav active="home" />
 
               <div className="flex flex-1 flex-col items-center justify-center py-10">
-                <h1 className="mb-10 text-center text-5xl font-black italic tracking-tight md:text-7xl">
-                  NEW YORK
-                  <span className="mx-4 inline-block text-red-600 animate-spin">★</span>
-                  BURGER
-                </h1>
+                <div className="mb-10 w-full overflow-hidden">
+                  <h1 className="hero-title text-center text-[18vw] font-black italic tracking-tight text-white sm:text-6xl md:text-7xl">
+                    NEW YORK
+                    <span className="mx-3 inline-block text-red-600">★</span>
+                    BURGER
+                  </h1>
+                </div>
+
+                <style>{`
+                  .hero-title {
+                    white-space: nowrap;
+                  }
+
+                  @media (max-width: 430px) {
+                    .hero-title {
+                      display: inline-block;
+                      min-width: max-content;
+                      animation: heroSlide 10s linear infinite;
+                    }
+                  }
+
+                  @keyframes heroSlide {
+                    from {
+                      transform: translateX(100%);
+                    }
+
+                    to {
+                      transform: translateX(-100%);
+                    }
+                  }
+                `}</style>
 
                 <img
                   src={`${import.meta.env.BASE_URL}assets/IMG_4107.jpeg`}
