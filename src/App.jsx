@@ -58,16 +58,16 @@ export default function App() {
                     .hero-title {
                       display: inline-block;
                       min-width: max-content;
-                      animation: heroSlide 8s linear infinite;
+                      animation: heroSlide 4.5s linear infinite;
                     }
                   }
 
                   @keyframes heroSlide {
-                    0%, 18% {
+                    0%, 10% {
                       transform: translateX(0);
                     }
 
-                    100% {
+                    90%, 100% {
                       transform: translateX(calc(-100% + 100vw - 1.5rem));
                     }
                   }
