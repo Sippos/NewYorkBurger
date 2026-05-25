@@ -40,33 +40,24 @@ export default function App() {
 
               <div className="flex flex-1 flex-col items-center justify-center py-10">
                 <div className="mb-10 w-full overflow-hidden">
-                  <h1 className="hero-title text-center text-[18vw] font-black italic tracking-tight text-white sm:text-6xl md:text-7xl">
+                  <h1 className="hero-title text-center font-black italic tracking-tight text-white sm:text-6xl md:text-7xl">
                     NEW YORK
-                    <span className="mx-3 inline-block text-red-600">★</span>
+                    <span className="mx-2 inline-block text-red-600 sm:mx-3">★</span>
                     BURGER
                   </h1>
                 </div>
 
                 <style>{`
                   .hero-title {
+                    font-size: clamp(2.15rem, 11vw, 4.5rem);
+                    line-height: 0.95;
                     white-space: nowrap;
                   }
 
                   @media (max-width: 430px) {
                     .hero-title {
-                      display: inline-block;
-                      min-width: max-content;
-                      animation: heroSlide 10s linear infinite;
-                    }
-                  }
-
-                  @keyframes heroSlide {
-                    from {
-                      transform: translateX(100%);
-                    }
-
-                    to {
-                      transform: translateX(-100%);
+                      animation: none;
+                      transform: none;
                     }
                   }
                 `}</style>
