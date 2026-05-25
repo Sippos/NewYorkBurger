@@ -56,8 +56,19 @@ export default function App() {
 
                   @media (max-width: 430px) {
                     .hero-title {
-                      animation: none;
-                      transform: none;
+                      display: inline-block;
+                      min-width: max-content;
+                      animation: heroSlide 8s linear infinite;
+                    }
+                  }
+
+                  @keyframes heroSlide {
+                    0%, 18% {
+                      transform: translateX(0);
+                    }
+
+                    100% {
+                      transform: translateX(calc(-100% + 100vw - 1.5rem));
                     }
                   }
                 `}</style>
