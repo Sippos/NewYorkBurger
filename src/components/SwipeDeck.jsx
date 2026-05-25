@@ -1,4 +1,5 @@
 import { useRef, useState } from "react"
+import { getMovieDetails } from "../lib/tmdb"
 
 export default function SwipeDeck({
   movies = [],
@@ -8,12 +9,14 @@ export default function SwipeDeck({
 }) {
   const [drag, setDrag] = useState(null)
   const [infoMovie, setInfoMovie] = useState(null)
+  const [loadingInfo, setLoadingInfo] = useState(false)
   const pointer = useRef({ x: 0, y: 0 })
 
   const topMovie = movies[0]
   const dragX = drag?.dx || 0
   const watchOpacity = Math.min(Math.max(dragX / 110, 0), 1)
   const passOpacity = Math.min(Math.max(-dragX / 110, 0), 1)
+  const apiKey = import.meta.env.VITE_TMDB_KEY
 
   const handlePointerDown = (e) => {
     const p = e.touches ? e.touches[0] : e
@@ -46,6 +49,19 @@ export default function SwipeDeck({
     if (drag.dx < -threshold) onSwipe("dislike", movie)
 
     setDrag(null)
+  }
+
+  async function openMovieInfo(movie) {
+    setLoadingInfo(true)
+
+    const details = await getMovieDetails(apiKey, movie.id)
+
+    setInfoMovie({
+      ...movie,
+      ...(details || {}),
+    })
+
+    setLoadingInfo(false)
   }
 
   if (movies.length === 0) {
@@ -123,7 +139,7 @@ export default function SwipeDeck({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      setInfoMovie(movie)
+                      openMovieInfo(movie)
                     }}
                     className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/60 text-lg font-bold text-white backdrop-blur transition hover:bg-white hover:text-black"
                   >
@@ -181,35 +197,41 @@ export default function SwipeDeck({
         </div>
       </div>
 
-      {infoMovie ? (
+      {infoMovie || loadingInfo ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-neutral-950 p-5 shadow-2xl shadow-black/40">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-2xl font-bold leading-tight">{infoMovie.title}</h3>
-                {infoMovie.year ? (
-                  <div className="mt-1 text-sm text-neutral-400">{infoMovie.year}</div>
+            {loadingInfo ? (
+              <div className="py-16 text-center text-neutral-400">Loading movie info...</div>
+            ) : (
+              <>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-2xl font-bold leading-tight">{infoMovie.title}</h3>
+                    {infoMovie.year ? (
+                      <div className="mt-1 text-sm text-neutral-400">{infoMovie.year}</div>
+                    ) : null}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setInfoMovie(null)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-xl text-neutral-300 transition hover:bg-white hover:text-black"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {infoMovie.tmdbRating ? (
+                  <div className="mt-4 inline-flex rounded-full bg-white px-3 py-1 text-sm font-semibold text-black">
+                    TMDB ★ {Number(infoMovie.tmdbRating).toFixed(1)}
+                  </div>
                 ) : null}
-              </div>
 
-              <button
-                type="button"
-                onClick={() => setInfoMovie(null)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-xl text-neutral-300 transition hover:bg-white hover:text-black"
-              >
-                ×
-              </button>
-            </div>
-
-            {infoMovie.tmdbRating ? (
-              <div className="mt-4 inline-flex rounded-full bg-white px-3 py-1 text-sm font-semibold text-black">
-                TMDB ★ {Number(infoMovie.tmdbRating).toFixed(1)}
-              </div>
-            ) : null}
-
-            <p className="mt-4 text-sm leading-7 text-neutral-300">
-              {infoMovie.overview || "No movie description available."}
-            </p>
+                <p className="mt-4 text-sm leading-7 text-neutral-300">
+                  {infoMovie.overview || "No movie description available."}
+                </p>
+              </>
+            )}
           </div>
         </div>
       ) : null}
