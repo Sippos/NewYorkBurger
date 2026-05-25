@@ -7,6 +7,7 @@ export default function SwipeDeck({
   emptyLabel = null,
 }) {
   const [drag, setDrag] = useState(null)
+  const [infoMovie, setInfoMovie] = useState(null)
   const pointer = useRef({ x: 0, y: 0 })
 
   const topMovie = movies[0]
@@ -61,111 +62,157 @@ export default function SwipeDeck({
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl">
-      <div className="mb-5 text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Swipe deck</p>
-        <h2 className="mt-2 text-3xl font-semibold">Your {itemLabel} pile</h2>
-        <p className="mt-2 text-sm text-neutral-400">
-          Drag the top card left to pass or right to watch.
-        </p>
-      </div>
+    <>
+      <div className="mx-auto w-full max-w-xl">
+        <div className="mb-5 text-center">
+          <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Swipe deck</p>
+          <h2 className="mt-2 text-3xl font-semibold">Your {itemLabel} pile</h2>
+          <p className="mt-2 text-sm text-neutral-400">
+            Drag the top card left to pass or right to watch.
+          </p>
+        </div>
 
-      <div className="relative h-[620px]">
-        {movies.map((movie, index) => {
-          const isTop = movie.id === topMovie.id
-          const rotation = drag ? drag.dx / 18 : 0
+        <div className="relative h-[620px]">
+          {movies.map((movie, index) => {
+            const isTop = movie.id === topMovie.id
+            const rotation = drag ? drag.dx / 18 : 0
 
-          const style =
-            isTop && drag
-              ? {
-                  transform: `translate(${drag.dx}px, ${drag.dy}px) rotate(${rotation}deg)`,
-                  transition: "transform 0s",
-                }
-              : {
-                  transform: `scale(${1 - index * 0.035}) translateY(${index * 14}px)`,
-                  transition: "transform 250ms ease",
-                }
+            const style =
+              isTop && drag
+                ? {
+                    transform: `translate(${drag.dx}px, ${drag.dy}px) rotate(${rotation}deg)`,
+                    transition: "transform 0s",
+                  }
+                : {
+                    transform: `scale(${1 - index * 0.035}) translateY(${index * 14}px)`,
+                    transition: "transform 250ms ease",
+                  }
 
-          return (
-            <div
-              key={movie.id}
-              className={`absolute left-0 right-0 mx-auto w-[350px] select-none overflow-hidden rounded-[2rem] border border-white/10 bg-neutral-950 shadow-2xl shadow-black/40 ${
-                isTop ? "cursor-grab active:cursor-grabbing" : "pointer-events-none"
-              }`}
-              style={{ ...style, zIndex: movies.length - index }}
-              onMouseDown={isTop ? handlePointerDown : undefined}
-              onMouseMove={isTop ? handlePointerMove : undefined}
-              onMouseUp={isTop ? () => handlePointerUp(movie) : undefined}
-              onMouseLeave={isTop ? () => handlePointerUp(movie) : undefined}
-              onTouchStart={isTop ? handlePointerDown : undefined}
-              onTouchMove={isTop ? handlePointerMove : undefined}
-              onTouchEnd={isTop ? () => handlePointerUp(movie) : undefined}
-            >
-              <div className="relative h-[440px] bg-neutral-900">
-                {movie.poster ? (
-                  <img
-                    src={movie.poster}
-                    alt={movie.title}
-                    draggable="false"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-neutral-800 text-neutral-500 uppercase tracking-[0.25em]">
-                    {movie.platform || itemLabel}
-                  </div>
-                )}
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-
-                {isTop ? (
-                  <>
-                    <div
-                      className="absolute left-6 top-8 -rotate-12 rounded-2xl border-4 border-rose-300 px-5 py-2 text-3xl font-black uppercase tracking-wide text-rose-300"
-                      style={{ opacity: passOpacity }}
-                    >
-                      Pass
+            return (
+              <div
+                key={movie.id}
+                className={`absolute left-0 right-0 mx-auto w-[350px] select-none overflow-hidden rounded-[2rem] border border-white/10 bg-neutral-950 shadow-2xl shadow-black/40 ${
+                  isTop ? "cursor-grab active:cursor-grabbing" : "pointer-events-none"
+                }`}
+                style={{ ...style, zIndex: movies.length - index }}
+                onMouseDown={isTop ? handlePointerDown : undefined}
+                onMouseMove={isTop ? handlePointerMove : undefined}
+                onMouseUp={isTop ? () => handlePointerUp(movie) : undefined}
+                onMouseLeave={isTop ? () => handlePointerUp(movie) : undefined}
+                onTouchStart={isTop ? handlePointerDown : undefined}
+                onTouchMove={isTop ? handlePointerMove : undefined}
+                onTouchEnd={isTop ? () => handlePointerUp(movie) : undefined}
+              >
+                <div className="relative h-[440px] bg-neutral-900">
+                  {movie.poster ? (
+                    <img
+                      src={movie.poster}
+                      alt={movie.title}
+                      draggable="false"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-neutral-800 text-neutral-500 uppercase tracking-[0.25em]">
+                      {movie.platform || itemLabel}
                     </div>
-                    <div
-                      className="absolute right-6 top-8 rotate-12 rounded-2xl border-4 border-emerald-300 px-5 py-2 text-3xl font-black uppercase tracking-wide text-emerald-300"
-                      style={{ opacity: watchOpacity }}
-                    >
-                      Watch
-                    </div>
-                  </>
-                ) : null}
+                  )}
 
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <h3 className="text-3xl font-bold leading-tight">{movie.title}</h3>
-                  {movie.year ? <div className="mt-1 text-neutral-300">{movie.year}</div> : null}
-                  {movie.platform ? <div className="mt-1 text-neutral-300 capitalize">{movie.platform}</div> : null}
-                  {movie.nominated_by ? (
-                    <div className="mt-2 text-xs uppercase tracking-[0.2em] text-neutral-400">
-                      Added by {movie.nominated_by}
-                    </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setInfoMovie(movie)
+                    }}
+                    className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/60 text-lg font-bold text-white backdrop-blur transition hover:bg-white hover:text-black"
+                  >
+                    i
+                  </button>
+
+                  {isTop ? (
+                    <>
+                      <div
+                        className="absolute left-6 top-8 -rotate-12 rounded-2xl border-4 border-rose-300 px-5 py-2 text-3xl font-black uppercase tracking-wide text-rose-300"
+                        style={{ opacity: passOpacity }}
+                      >
+                        Pass
+                      </div>
+                      <div
+                        className="absolute right-6 top-8 rotate-12 rounded-2xl border-4 border-emerald-300 px-5 py-2 text-3xl font-black uppercase tracking-wide text-emerald-300"
+                        style={{ opacity: watchOpacity }}
+                      >
+                        Watch
+                      </div>
+                    </>
                   ) : null}
+
+                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                    <h3 className="text-3xl font-bold leading-tight">{movie.title}</h3>
+                    {movie.year ? <div className="mt-1 text-neutral-300">{movie.year}</div> : null}
+                    {movie.platform ? <div className="mt-1 text-neutral-300 capitalize">{movie.platform}</div> : null}
+                    {movie.nominated_by ? (
+                      <div className="mt-2 text-xs uppercase tracking-[0.2em] text-neutral-400">
+                        Added by {movie.nominated_by}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 p-4">
+                  <button
+                    type="button"
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950"
+                    onClick={() => onSwipe("dislike", movie)}
+                  >
+                    Pass
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-2xl bg-white px-4 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200"
+                    onClick={() => onSwipe("like", movie)}
+                  >
+                    Watch
+                  </button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3 p-4">
-                <button
-                  type="button"
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950"
-                  onClick={() => onSwipe("dislike", movie)}
-                >
-                  Pass
-                </button>
-                <button
-                  type="button"
-                  className="rounded-2xl bg-white px-4 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200"
-                  onClick={() => onSwipe("like", movie)}
-                >
-                  Watch
-                </button>
-              </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
-    </div>
+
+      {infoMovie ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-neutral-950 p-5 shadow-2xl shadow-black/40">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-2xl font-bold leading-tight">{infoMovie.title}</h3>
+                {infoMovie.year ? (
+                  <div className="mt-1 text-sm text-neutral-400">{infoMovie.year}</div>
+                ) : null}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setInfoMovie(null)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-xl text-neutral-300 transition hover:bg-white hover:text-black"
+              >
+                ×
+              </button>
+            </div>
+
+            {infoMovie.tmdbRating ? (
+              <div className="mt-4 inline-flex rounded-full bg-white px-3 py-1 text-sm font-semibold text-black">
+                TMDB ★ {Number(infoMovie.tmdbRating).toFixed(1)}
+              </div>
+            ) : null}
+
+            <p className="mt-4 text-sm leading-7 text-neutral-300">
+              {infoMovie.overview || "No movie description available."}
+            </p>
+          </div>
+        </div>
+      ) : null}
+    </>
   )
 }
