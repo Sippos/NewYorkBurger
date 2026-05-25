@@ -36,9 +36,10 @@ export default function PageNav({ active = "home" }) {
     <>
       <header className="mb-5 rounded-full border border-white/10 bg-neutral-950/95 px-3 py-3 shadow-2xl shadow-black/30 backdrop-blur sm:px-4">
         <div className="flex items-center gap-3">
-          <nav className="grid flex-1 grid-cols-3 gap-1 rounded-full bg-white/[0.04] p-1 text-center text-xs sm:text-sm">
+          <nav className="grid flex-1 grid-cols-4 gap-1 rounded-full bg-white/[0.04] p-1 text-center text-xs sm:text-sm">
             <Link to="/" className={linkClass("home")}>Home</Link>
             <Link to="/movies" className={linkClass("movies")}>Movies</Link>
+            <Link to="/games" className={linkClass("games")}>Games</Link>
             <Link to="/videos" className={linkClass("videos")}>Videos</Link>
           </nav>
 
