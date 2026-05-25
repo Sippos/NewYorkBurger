@@ -6,6 +6,7 @@ export default function PageNav({ active = "home" }) {
   const [handle, setHandle] = useState("")
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState("")
+  const [savedMessage, setSavedMessage] = useState("")
 
   useEffect(() => {
     const saved = getSavedHandle()
@@ -15,8 +16,13 @@ export default function PageNav({ active = "home" }) {
 
   function saveHandle() {
     const saved = saveSharedHandle(draft)
+    if (!saved) return
     setHandle(saved)
-    setEditing(false)
+    setSavedMessage(`Saved as ${saved}`)
+    setTimeout(() => {
+      setSavedMessage("")
+      setEditing(false)
+    }, 650)
   }
 
   const linkClass = (name) =>
@@ -36,13 +42,9 @@ export default function PageNav({ active = "home" }) {
             <Link to="/videos" className={linkClass("videos")}>Videos</Link>
           </nav>
 
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            aria-label="Account"
-            className="flex h-11 min-w-[54px] items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:bg-white hover:text-black"
-          >
-            {handle || "+"}
+          <button type="button" onClick={() => setEditing(true)} aria-label="Profile" className="flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-3 text-sm font-semibold text-white transition hover:bg-white hover:text-black sm:px-4">
+            <span className="mr-1.5">👤</span>
+            <span>{handle || "Profile"}</span>
           </button>
         </div>
       </header>
@@ -52,40 +54,18 @@ export default function PageNav({ active = "home" }) {
           <div className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-neutral-950 p-5 shadow-2xl shadow-black/40">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-xs uppercase tracking-[0.3em] text-neutral-500">Account</div>
-                <h2 className="mt-1 text-2xl font-bold">
-                  {handle ? "Your handle" : "Create handle"}
-                </h2>
+                <div className="text-xs uppercase tracking-[0.3em] text-neutral-500">Profile</div>
+                <h2 className="mt-1 text-2xl font-bold">Your profile</h2>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setEditing(false)}
-                className="text-2xl text-neutral-400 hover:text-white"
-              >
-                ×
-              </button>
+              <button type="button" onClick={() => setEditing(false)} className="text-2xl text-neutral-400 hover:text-white">×</button>
             </div>
 
-            <p className="mt-3 text-sm text-neutral-400">
-              Your handle is used everywhere across movies and videos.
-            </p>
+            <p className="mt-3 text-sm text-neutral-400">This display name is saved on this device and shown when you upload, vote, or rate.</p>
 
-            <input
-              autoFocus
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Choose a handle"
-              className="mt-5 w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none"
-            />
-
-            <button
-              type="button"
-              onClick={saveHandle}
-              className="mt-4 w-full rounded-2xl bg-white px-5 py-3 font-semibold text-black"
-            >
-              {handle ? "Save changes" : "Create account"}
-            </button>
+            <label className="mt-5 block text-sm font-semibold text-neutral-300">Display name</label>
+            <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Choose a display name" className="mt-2 w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none" />
+            {savedMessage ? <p className="mt-3 rounded-2xl bg-emerald-700 p-3 text-sm text-white">{savedMessage}</p> : null}
+            <button type="button" onClick={saveHandle} className="mt-4 w-full rounded-2xl bg-white px-5 py-3 font-semibold text-black">Save profile</button>
           </div>
         </div>
       ) : null}
