@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import SwipeDeck from "../components/SwipeDeck"
 import PageNav from "../components/PageNav"
 import { getYoutubeTitle, makeVideoFromLink } from "../lib/youtube"
-import { addVideoLink, getVideoLinks, setVideoClassic, supabase } from "../lib/supabaseClient"
+import { addVideoLink, deleteVideoLink, getVideoLinks, setVideoClassic, supabase, updateVideoLink } from "../lib/supabaseClient"
 
 function cleanHandle(value) {
   return String(value || "").trim()
@@ -11,6 +11,7 @@ function cleanHandle(value) {
 export default function Videos() {
   const [url, setUrl] = useState("")
   const [title, setTitle] = useState("")
+  const [editingVideo, setEditingVideo] = useState(null)
   const [handle, setHandle] = useState(() => cleanHandle(localStorage.getItem("video_uploader") || ""))
   const [draftHandle, setDraftHandle] = useState(() => cleanHandle(localStorage.getItem("video_uploader") || ""))
   const [isChoosingHandle, setIsChoosingHandle] = useState(() => !cleanHandle(localStorage.getItem("video_uploader") || ""))
@@ -126,6 +127,34 @@ export default function Videos() {
     await loadVideos()
   }
 
+  async function saveVideoSettings() {
+    if (!editingVideo) return
+
+    const res = await updateVideoLink(editingVideo.id, {
+      title: editingVideo.title,
+    })
+
+    if (res?.error) {
+      setMessage({ type: "error", text: "Could not update video." })
+      return
+    }
+
+    setEditingVideo(null)
+    await loadVideos()
+  }
+
+  async function removeVideo(id) {
+    const res = await deleteVideoLink(id)
+
+    if (res?.error) {
+      setMessage({ type: "error", text: "Could not delete video." })
+      return
+    }
+
+    setEditingVideo(null)
+    await loadVideos()
+  }
+
   async function handleSwipe(vote, video) {
     if (vote === "like") await markClassic(video)
   }
@@ -171,7 +200,6 @@ export default function Videos() {
         </section>
 
         {message ? <div className={`mb-4 rounded-2xl p-3 ${message.type === "error" ? "bg-red-600" : "bg-emerald-700"}`}>{message.text}</div> : null}
-        {loading ? <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-neutral-400">Loading videos...</div> : null}
 
         <section className="mb-10 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -186,9 +214,26 @@ export default function Videos() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {videos.map((video) => (
                 <div key={video.id} className="overflow-hidden rounded-3xl border border-white/10 bg-neutral-950/70">
-                  <a href={video.url} target="_blank" rel="noreferrer">
-                    {video.poster ? <img src={video.poster} alt={video.title} className="h-52 w-full object-cover" /> : <div className="flex h-52 items-center justify-center bg-neutral-900 text-neutral-500 uppercase tracking-[0.3em]">{video.platform}</div>}
-                  </a>
+                  <div className="relative">
+                    <a href={video.url} target="_blank" rel="noreferrer">
+                      {video.poster && video.platform !== "tiktok" ? (
+                        <img src={video.poster} alt={video.title} className="h-52 w-full object-cover" />
+                      ) : (
+                        <div className="flex h-52 items-center justify-center bg-neutral-900 text-neutral-500 uppercase tracking-[0.3em]">
+                          {video.platform}
+                        </div>
+                      )}
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditingVideo(video)}
+                      className="absolute right-3 top-3 rounded-full border border-white/10 bg-black/60 px-3 py-1 text-sm backdrop-blur hover:bg-white hover:text-black"
+                    >
+                      ⚙
+                    </button>
+                  </div>
+
                   <div className="p-4">
                     <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-neutral-500">
                       <span>{video.platform}</span>
@@ -210,29 +255,40 @@ export default function Videos() {
           <SwipeDeck movies={votePile} onSwipe={handleSwipe} itemLabel="videos" emptyLabel="No non-classic videos left to vote on" />
         </section>
 
-        <section className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Hall of fame</p>
-              <h2 className="mt-1 text-3xl font-semibold">Classic funny videos</h2>
-            </div>
-            <div className="max-w-xs text-sm text-neutral-500 sm:text-right">Pinned links the group wants to remember forever</div>
-          </div>
+        {editingVideo ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-neutral-950 p-5 shadow-2xl shadow-black/40">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-bold">Video settings</h3>
+                <button type="button" onClick={() => setEditingVideo(null)} className="text-2xl text-neutral-400 hover:text-white">×</button>
+              </div>
 
-          {classics.length === 0 ? <p className="text-neutral-400">No classics yet.</p> : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {classics.map((video) => (
-                <a key={video.id} href={video.url} target="_blank" rel="noreferrer" className="overflow-hidden rounded-3xl border border-white/10 bg-neutral-950/70 transition hover:border-white/30">
-                  {video.poster ? <img src={video.poster} alt={video.title} className="h-52 w-full object-cover" /> : <div className="flex h-52 items-center justify-center bg-neutral-900 text-neutral-500 uppercase tracking-[0.3em]">{video.platform}</div>}
-                  <div className="p-4">
-                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">{video.platform} • uploaded by {video.uploaded_by}</div>
-                    <div className="mt-2 text-lg font-semibold leading-tight">{video.title}</div>
-                  </div>
-                </a>
-              ))}
+              <div className="mt-5 space-y-3">
+                <input
+                  className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none"
+                  value={editingVideo.title}
+                  onChange={(e) => setEditingVideo({ ...editingVideo, title: e.target.value })}
+                />
+
+                <button
+                  type="button"
+                  onClick={saveVideoSettings}
+                  className="w-full rounded-2xl bg-white px-5 py-3 font-semibold text-black"
+                >
+                  Save changes
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => removeVideo(editingVideo.id)}
+                  className="w-full rounded-2xl bg-red-600 px-5 py-3 font-semibold text-white"
+                >
+                  Delete video
+                </button>
+              </div>
             </div>
-          )}
-        </section>
+          </div>
+        ) : null}
       </div>
     </div>
   )
