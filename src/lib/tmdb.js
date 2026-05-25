@@ -38,6 +38,18 @@ export async function searchMovies(apiKey, query, page = 1) {
   return data.results.map(mapMovie)
 }
 
+export async function getMovieDetails(apiKey, movieId) {
+  if (!apiKey || !movieId) return null
+
+  const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}&language=en-US`
+
+  const res = await fetch(url)
+  if (!res.ok) return null
+
+  const data = await res.json()
+  return mapMovie(data)
+}
+
 export async function getExternalIds(apiKey, movieId) {
   if (!apiKey || !movieId) return null
   const url = `https://api.themoviedb.org/3/movie/${movieId}/external_ids?api_key=${apiKey}`
