@@ -34,6 +34,20 @@ export function getYoutubeThumbnail(videoId) {
   return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
 }
 
+export async function getYoutubeTitle(url) {
+  const cleanUrl = normalizeUrl(url)
+  if (!getYoutubeVideoId(cleanUrl)) return ""
+
+  try {
+    const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(cleanUrl)}&format=json`)
+    if (!res.ok) return ""
+    const data = await res.json()
+    return String(data?.title || "").trim()
+  } catch {
+    return ""
+  }
+}
+
 function getPlatform(parsed) {
   const host = parsed.hostname.replace(/^www\./, "")
 
