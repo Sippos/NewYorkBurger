@@ -1,0 +1,20 @@
+export const HANDLE_STORAGE_KEY = "nyb_handle"
+
+export function cleanHandle(value) {
+  return String(value || "").trim()
+}
+
+export function getSavedHandle() {
+  return cleanHandle(localStorage.getItem(HANDLE_STORAGE_KEY) || localStorage.getItem("video_uploader") || localStorage.getItem("rater") || "")
+}
+
+export function saveSharedHandle(value) {
+  const clean = cleanHandle(value)
+  if (!clean) return ""
+
+  localStorage.setItem(HANDLE_STORAGE_KEY, clean)
+  localStorage.setItem("video_uploader", clean)
+  localStorage.setItem("rater", clean)
+
+  return clean
+}
