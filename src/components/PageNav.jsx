@@ -26,7 +26,7 @@ export default function PageNav({ active = "home" }) {
   }
 
   const linkClass = (name) =>
-    `rounded-full px-3 py-2 text-sm transition sm:px-4 ${
+    `flex h-10 items-center justify-center rounded-full px-2 text-xs transition sm:h-11 sm:px-4 sm:text-sm ${
       active === name
         ? "bg-white font-semibold text-neutral-950"
         : "text-neutral-300 hover:bg-white/10 hover:text-white"
@@ -34,18 +34,21 @@ export default function PageNav({ active = "home" }) {
 
   return (
     <>
-      <header className="mb-5 rounded-full border border-white/10 bg-neutral-950/95 px-3 py-3 shadow-2xl shadow-black/30 backdrop-blur sm:px-4">
-        <div className="flex items-center gap-3">
-          <nav className="grid flex-1 grid-cols-4 gap-1 rounded-full bg-white/[0.04] p-1 text-center text-xs sm:text-sm">
-            <Link to="/" className={linkClass("home")}>Home</Link>
+      <header className="mb-5 rounded-[2rem] border border-white/10 bg-neutral-950/95 px-2 py-2 shadow-2xl shadow-black/30 backdrop-blur sm:rounded-full sm:px-4 sm:py-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <nav className="grid min-w-0 flex-1 grid-cols-4 gap-1 rounded-full bg-white/[0.04] p-1 text-center">
+            <Link to="/" aria-label="Home" title="Home" className={linkClass("home")}>
+              <span className="text-base sm:hidden">⌂</span>
+              <span className="hidden sm:inline">Home</span>
+            </Link>
             <Link to="/movies" className={linkClass("movies")}>Movies</Link>
             <Link to="/games" className={linkClass("games")}>Games</Link>
             <Link to="/videos" className={linkClass("videos")}>Videos</Link>
           </nav>
 
-          <button type="button" onClick={() => setEditing(true)} aria-label="Profile" className="flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-3 text-sm font-semibold text-white transition hover:bg-white hover:text-black sm:px-4">
-            <span className="mr-1.5">👤</span>
-            <span>{handle || "Profile"}</span>
+          <button type="button" onClick={() => setEditing(true)} aria-label="Profile" className="flex h-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 text-sm font-semibold text-white transition hover:bg-white hover:text-black sm:px-4">
+            <span className="sm:mr-1.5">👤</span>
+            <span className="hidden max-w-[4.5rem] truncate sm:inline">{handle || "Profile"}</span>
           </button>
         </div>
       </header>
