@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import SwipeDeck from "../components/SwipeDeck"
 import PageNav from "../components/PageNav"
-import { makeVideoFromLink } from "../lib/youtube"
+import { getYoutubeTitle, makeVideoFromLink } from "../lib/youtube"
 import { addVideoLink, getVideoLinks, setVideoClassic, supabase } from "../lib/supabaseClient"
 
 function cleanHandle(value) {
@@ -49,6 +49,16 @@ export default function Videos() {
   useEffect(() => {
     loadVideos()
   }, [])
+
+  useEffect(() => {
+    if (!title.trim() && url.trim()) {
+      getYoutubeTitle(url).then((youtubeTitle) => {
+        if (youtubeTitle) {
+          setTitle(youtubeTitle)
+        }
+      })
+    }
+  }, [url])
 
   useEffect(() => {
     if (!supabase) return
@@ -151,7 +161,7 @@ export default function Videos() {
 
           <div className="mt-5 space-y-3">
             <input className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none disabled:opacity-40" placeholder={canUpload ? "Paste YouTube / TikTok / Instagram link" : "Choose uploader name first"} disabled={!canUpload} value={url} onChange={(e) => setUrl(e.target.value)} />
-            <input className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none disabled:opacity-40" placeholder="Funny title" disabled={!canUpload} value={title} onChange={(e) => setTitle(e.target.value)} />
+            <input className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none disabled:opacity-40" placeholder="Funny title (optional)" disabled={!canUpload} value={title} onChange={(e) => setTitle(e.target.value)} />
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button type="button" disabled={!canUpload} onClick={() => uploadVideo(false)} className="rounded-2xl bg-white px-5 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:opacity-40">Upload to feed</button>
