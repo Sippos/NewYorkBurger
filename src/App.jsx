@@ -5,6 +5,16 @@ import Videos from "./pages/Videos"
 import Lobby from "./pages/Lobby"
 import PageNav from "./components/PageNav"
 
+function HeroTitleText() {
+  return (
+    <span className="hero-title-text">
+      <span>NEW YORK</span>
+      <span className="mx-2 inline-block text-red-600 sm:mx-3">★</span>
+      <span>BURGER</span>
+    </span>
+  )
+}
+
 export default function App() {
   const targetDate = new Date('2026-09-03T00:00:00')
 
@@ -40,15 +50,9 @@ export default function App() {
 
               <div className="flex flex-1 flex-col items-center justify-center py-10">
                 <div className="hero-title-wrap mb-10 w-full overflow-hidden">
-                  <h1 className="hero-title text-center font-black italic tracking-tight text-white sm:text-6xl md:text-7xl">
-                    <span>NEW YORK</span>
-                    <span className="mx-2 inline-block text-red-600 sm:mx-3">★</span>
-                    <span>BURGER</span>
-                    <span className="hero-title-repeat" aria-hidden="true">
-                      <span>NEW YORK</span>
-                      <span className="mx-2 inline-block text-red-600 sm:mx-3">★</span>
-                      <span>BURGER</span>
-                    </span>
+                  <h1 className="hero-title font-black italic tracking-tight text-white sm:text-6xl md:text-7xl">
+                    <HeroTitleText />
+                    <HeroTitleText />
                   </h1>
                 </div>
 
@@ -59,7 +63,7 @@ export default function App() {
                     white-space: nowrap;
                   }
 
-                  .hero-title-repeat {
+                  .hero-title-text + .hero-title-text {
                     display: none;
                   }
 
@@ -71,25 +75,30 @@ export default function App() {
                     }
 
                     .hero-title {
-                      display: inline-flex;
-                      min-width: max-content;
-                      animation: heroSlide 3.6s linear infinite;
-                      gap: 2rem;
+                      display: flex;
+                      width: max-content;
+                      animation: heroMarquee 3.2s linear infinite;
                     }
 
-                    .hero-title-repeat {
+                    .hero-title-text {
                       display: inline-flex;
                       align-items: center;
+                      flex: 0 0 auto;
+                      padding-right: 2rem;
+                    }
+
+                    .hero-title-text + .hero-title-text {
+                      display: inline-flex;
                     }
                   }
 
-                  @keyframes heroSlide {
+                  @keyframes heroMarquee {
                     from {
                       transform: translateX(0);
                     }
 
                     to {
-                      transform: translateX(calc(-50% - 1rem));
+                      transform: translateX(-50%);
                     }
                   }
                 `}</style>
