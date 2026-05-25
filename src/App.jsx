@@ -4,6 +4,7 @@ import Movies from "./pages/Movies"
 import Videos from "./pages/Videos"
 import Lobby from "./pages/Lobby"
 import PageNav from "./components/PageNav"
+import Games from "./pages/Games"
 
 function HeroTitleText() {
   return (
@@ -129,6 +130,7 @@ export default function App() {
 
       <Route path="/movies" element={<Movies />} />
       <Route path="/videos" element={<Videos />} />
+      <Route path="/games" element={<Games />} />
       <Route path="/lobby" element={<Lobby />} />
       <Route path="/lobby/:id" element={<Lobby />} />
     </Routes>
