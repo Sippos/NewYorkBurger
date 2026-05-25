@@ -112,6 +112,74 @@ export async function deleteWatchedByMovieId(movieId) {
   return handle(await supabase.from("watched").delete().eq("movie_id", Number(movieId)))
 }
 
+export async function addGameNomination(game, nominatedBy = "local", lobbyId = "global") {
+  if (!supabase) return { error: "Supabase not configured" }
+  const payload = { lobby_id: lobbyId, game_id: game.id, title: game.title, poster: game.poster, nominated_by: nominatedBy }
+  return handle(await supabase.from("game_nominations").upsert(payload, { onConflict: "lobby_id,game_id" }).select())
+}
+
+export async function getGameNominations(lobbyId = "global") {
+  if (!supabase) return { error: "Supabase not configured" }
+  return handle(await supabase.from("game_nominations").select("*").eq("lobby_id", lobbyId).order("created_at", { ascending: false }))
+}
+
+export async function voteGame(game, vote, lobbyId = "global", voterName = "") {
+  if (!supabase) return { error: "Supabase not configured" }
+  const voter = getVoterId(voterName)
+  const payload = { lobby_id: lobbyId, game_id: game.id, title: game.title, poster: game.poster, voter, vote }
+  return handle(await supabase.from("game_votes").upsert(payload, { onConflict: "lobby_id,game_id,voter" }).select())
+}
+
+export async function getGameRanking(lobbyId = "global") {
+  if (!supabase) return []
+  const { data, error } = await supabase.from("game_votes").select("*").eq("lobby_id", lobbyId)
+  if (error) throw error
+  const grouped = {}
+  for (const row of data || []) {
+    if (!grouped[row.game_id]) grouped[row.game_id] = { gameId: row.game_id, title: row.title, poster: row.poster, likes: 0, dislikes: 0 }
+    if (row.vote === "like") grouped[row.game_id].likes += 1
+    if (row.vote === "dislike") grouped[row.game_id].dislikes += 1
+  }
+  return Object.values(grouped).map((game) => ({ ...game, totalVotes: game.likes + game.dislikes, score: game.likes - game.dislikes })).sort((a, b) => b.likes - a.likes || b.score - a.score)
+}
+
+export async function getMyGameVotes(lobbyId = "global", voterName = "") {
+  if (!supabase) return []
+  const voter = getVoterId(voterName)
+  const { data, error } = await supabase.from("game_votes").select("*").eq("lobby_id", lobbyId).eq("voter", voter)
+  if (error) throw error
+  return data || []
+}
+
+export async function setGameRating(gameId, rating, rater = "local") {
+  if (!supabase) return { error: "Supabase not configured" }
+  return handle(await supabase.from("game_ratings").upsert({ game_id: gameId, rating, rater }, { onConflict: "game_id,rater" }).select())
+}
+
+export async function markGamePlayedWithRating(game, playedBy, rating = null) {
+  if (!supabase) return { error: "Supabase not configured" }
+  const res = await supabase.from("game_watched").upsert({ game_id: game.id, title: game.title, poster: game.poster, watched_by: playedBy }, { onConflict: "game_id" }).select()
+  if (rating !== null && rating !== undefined) await setGameRating(game.id, rating, playedBy)
+  return handle(res)
+}
+
+export async function getPlayedGames(rater = "local") {
+  if (!supabase) return { error: "Supabase not configured" }
+  const res = await supabase.from("game_watched").select("*").order("watched_at", { ascending: false })
+  if (res.error) return handle(res)
+  const played = res.data || []
+  const gameIds = played.map((game) => game.game_id).filter(Boolean)
+  if (gameIds.length === 0) return { data: played }
+  const ratingsRes = await supabase.from("game_ratings").select("*").in("game_id", gameIds)
+  const ratings = ratingsRes.data || []
+  return { data: played.map((game) => {
+    const gameRatings = ratings.filter((r) => r.game_id === game.game_id)
+    const myRating = gameRatings.find((r) => r.rater === rater)
+    const avgRating = gameRatings.length > 0 ? Math.round((gameRatings.reduce((sum, r) => sum + Number(r.rating), 0) / gameRatings.length) * 10) / 10 : null
+    return { ...game, rating: myRating?.rating ?? null, avgRating, ratingCount: gameRatings.length }
+  }).sort((a, b) => (b.avgRating ?? -1) - (a.avgRating ?? -1) || b.ratingCount - a.ratingCount) }
+}
+
 export async function getVideoLinks() {
   if (!supabase) return { error: "Supabase not configured" }
   return handle(await supabase.from("video_links").select("*").order("created_at", { ascending: false }))
