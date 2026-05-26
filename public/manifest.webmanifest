@@ -1,0 +1,56 @@
+{
+  "id": "/NewYorkBurger/",
+  "name": "New York Burger",
+  "short_name": "NY Burger",
+  "description": "Shared movie, video, and game links for the New York Burger group.",
+  "start_url": "/NewYorkBurger/",
+  "scope": "/NewYorkBurger/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/NewYorkBurger/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "share_target": {
+    "action": "/NewYorkBurger/?share-target=videos",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "shortcuts": [
+    {
+      "name": "Share a video",
+      "short_name": "Share video",
+      "description": "Paste or save a shared YouTube, TikTok, or Instagram link.",
+      "url": "/NewYorkBurger/?share-target=videos",
+      "icons": [
+        {
+          "src": "/NewYorkBurger/favicon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Videos",
+      "short_name": "Videos",
+      "url": "/NewYorkBurger/#/videos",
+      "icons": [
+        {
+          "src": "/NewYorkBurger/favicon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
+}
