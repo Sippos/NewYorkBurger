@@ -1,16 +1,48 @@
-# React + Vite
+# New York Burger
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A shared group site for movies, games, and funny video links.
 
-Currently, two official plugins are available:
+## Sharing video links
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The Videos page lets users paste YouTube, TikTok, Instagram, or normal links. YouTube titles are fetched automatically when possible, then saved to the shared Supabase `video_links` table.
 
-## React Compiler
+## Android PWA sharing
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+After installing the site as a PWA on Android/Chrome, the manifest share target can receive links from apps such as YouTube:
 
-## Expanding the ESLint configuration
+```text
+YouTube → Share → New York Burger → Save to videos
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The share target opens:
+
+```text
+/NewYorkBurger/?share-target=videos&title=...&text=...&url=...
+```
+
+## iPhone sharing with Shortcuts
+
+The YouTube iPhone app does not reliably show installed PWAs as share destinations, so use an iOS Shortcut instead.
+
+Create a Shortcut named **Save to NY Burger**:
+
+1. Open the Shortcuts app.
+2. Create a new shortcut.
+3. Open the shortcut details and enable **Show in Share Sheet**.
+4. Set accepted input to **URLs** and/or **Text**.
+5. Add a **URL Encode** action for the Shortcut Input.
+6. Add a **URL** action with this value:
+
+```text
+https://sippos.github.io/NewYorkBurger/?share-target=videos&url=ENCODED_SHORTCUT_INPUT
+```
+
+7. Add **Open URLs**.
+
+After that, the intended iPhone flow is:
+
+```text
+YouTube → Share → Save to NY Burger → site opens with the link prefilled → Save to videos
+```
+
+The website still fetches the YouTube title and saves through the same video upload code path as the Videos page.
