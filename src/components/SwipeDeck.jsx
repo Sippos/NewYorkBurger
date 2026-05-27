@@ -272,6 +272,10 @@ export default function SwipeDeck({
                   {infoMovie.tmdbRating ? <DetailPill>TMDB ★ {Number(infoMovie.tmdbRating).toFixed(1)}</DetailPill> : null}
                   {infoMovie.rawgRating ? <DetailPill>RAWG ★ {Number(infoMovie.rawgRating).toFixed(1)}</DetailPill> : null}
                   {infoMovie.metacritic ? <DetailPill>Metacritic {infoMovie.metacritic}</DetailPill> : null}
+                  {infoMovie.runtime ? <DetailPill>{infoMovie.runtime} min</DetailPill> : null}
+                  {infoMovie.numberOfSeasons ? <DetailPill>{infoMovie.numberOfSeasons} season{infoMovie.numberOfSeasons === 1 ? "" : "s"}</DetailPill> : null}
+                  {infoMovie.numberOfEpisodes ? <DetailPill>{infoMovie.numberOfEpisodes} episode{infoMovie.numberOfEpisodes === 1 ? "" : "s"}</DetailPill> : null}
+                  {infoMovie.status ? <DetailPill>{infoMovie.status}</DetailPill> : null}
                   {infoMovie.playtime ? <DetailPill>{infoMovie.playtime}h avg playtime</DetailPill> : null}
                   {infoMovie.esrbRating ? <DetailPill>{infoMovie.esrbRating}</DetailPill> : null}
                 </div>
