@@ -13,6 +13,23 @@ function mapMovie(m) {
   }
 }
 
+function mapSeries(s) {
+  return {
+    id: s.id,
+    title: s.name || s.original_name || '',
+    year: s.first_air_date ? s.first_air_date.split('-')[0] : '',
+    released: s.first_air_date || null,
+    poster: s.poster_path ? `https://image.tmdb.org/t/p/w500${s.poster_path}` : null,
+    backdrop: s.backdrop_path ? `https://image.tmdb.org/t/p/w780${s.backdrop_path}` : null,
+    overview: s.overview || '',
+    tmdbRating: s.vote_average ?? null,
+    numberOfSeasons: s.number_of_seasons ?? null,
+    numberOfEpisodes: s.number_of_episodes ?? null,
+    status: s.status || null,
+    genres: s.genres?.map((genre) => genre.name).filter(Boolean) ?? [],
+  }
+}
+
 export async function fetchPopularMovies(apiKey, page = 1) {
   if (!apiKey) {
     return []
@@ -42,6 +59,19 @@ export async function searchMovies(apiKey, query, page = 1) {
   return data.results.map(mapMovie)
 }
 
+export async function searchSeries(apiKey, query, page = 1) {
+  if (!apiKey || !query) return []
+  const url = `https://api.themoviedb.org/3/search/tv?api_key=${apiKey}&language=en-US&query=${encodeURIComponent(
+    query
+  )}&page=${page}&include_adult=false`
+
+  const res = await fetch(url)
+  if (!res.ok) return []
+  const data = await res.json()
+
+  return data.results.map(mapSeries)
+}
+
 export async function getMovieDetails(apiKey, movieId) {
   if (!apiKey || !movieId) return null
 
@@ -52,6 +82,18 @@ export async function getMovieDetails(apiKey, movieId) {
 
   const data = await res.json()
   return mapMovie(data)
+}
+
+export async function getSeriesDetails(apiKey, seriesId) {
+  if (!apiKey || !seriesId) return null
+
+  const url = `https://api.themoviedb.org/3/tv/${seriesId}?api_key=${apiKey}&language=en-US`
+
+  const res = await fetch(url)
+  if (!res.ok) return null
+
+  const data = await res.json()
+  return mapSeries(data)
 }
 
 export async function getExternalIds(apiKey, movieId) {
