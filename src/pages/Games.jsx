@@ -14,6 +14,15 @@ function DetailPill({ children }) {
   return <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-neutral-300">{children}</span>
 }
 
+function displayYear(value) {
+  const year = String(value || "").match(/\d{4}/)?.[0]
+  return year || ""
+}
+
+function getPlayedGameKey(game) {
+  return String(game?.game_id || game?.id || "")
+}
+
 export default function Games() {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState([])
@@ -23,6 +32,7 @@ export default function Games() {
   const [actionMessage, setActionMessage] = useState(null)
   const [infoGame, setInfoGame] = useState(null)
   const [loadingInfoGame, setLoadingInfoGame] = useState(false)
+  const [ratingEditorOpen, setRatingEditorOpen] = useState({})
 
   const deckRef = useRef(null)
   const apiKey = import.meta.env.VITE_RAWG_API_KEY
@@ -134,6 +144,7 @@ export default function Games() {
   async function handleRating(gameId, rating) {
     if (!canUseApp) return
     await setGameRating(gameId, rating, activeHandle)
+    setRatingEditorOpen((current) => ({ ...current, [String(gameId)]: false }))
     await loadPlayed()
   }
 
@@ -151,6 +162,12 @@ export default function Games() {
     const details = await getGameDetails(apiKey, gameId)
     setInfoGame({ ...game, ...(details || {}) })
     setLoadingInfoGame(false)
+  }
+
+  function toggleRatingEditor(game) {
+    const key = getPlayedGameKey(game)
+    if (!key) return
+    setRatingEditorOpen((current) => ({ ...current, [key]: !current[key] }))
   }
 
   return (
@@ -229,32 +246,45 @@ export default function Games() {
 
           {played.length === 0 ? <p className="text-neutral-400">No played games yet.</p> : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {played.map((game) => (
-                <div key={game.id} className="rounded-3xl border border-white/10 bg-neutral-950/70 p-3">
-                  <div className="flex gap-3">
-                    {game.poster ? <img src={game.poster} alt="" className="h-28 w-20 shrink-0 rounded-2xl object-cover" /> : null}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <strong className="line-clamp-2 text-lg leading-tight">{game.title}</strong>
-                        <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-neutral-950">{game.avgRating === null ? "No rating" : `${game.avgRating}/10`}</span>
-                      </div>
-                      <div className="mt-1 text-xs text-neutral-500">{game.ratingCount || 0} rating{game.ratingCount === 1 ? "" : "s"}</div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {game.rawgRating ? <DetailPill>RAWG ★ {Number(game.rawgRating).toFixed(1)}</DetailPill> : null}
-                        {game.released || game.year ? <DetailPill>{game.released || game.year}</DetailPill> : null}
-                        {game.playtime ? <DetailPill>{game.playtime}h avg</DetailPill> : null}
-                      </div>
-                      {game.genres?.length ? <div className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-400">{game.genres.join(" · ")}</div> : null}
-                      <button type="button" onClick={() => openPlayedGameInfo(game)} className="mt-3 rounded-xl border border-white/10 px-3 py-2 text-sm font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950">Info</button>
-                      <div className="mt-3 grid grid-cols-5 gap-1.5">
-                        {RATINGS.map((rating) => (
-                          <button key={rating} type="button" className={`rounded-xl border px-0 py-2 text-sm font-semibold transition ${Number(game.rating) === rating ? "border-white bg-white text-neutral-950" : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/30"}`} onClick={() => handleRating(game.game_id, rating)}>{rating}</button>
-                        ))}
+              {played.map((game) => {
+                const gameKey = getPlayedGameKey(game)
+                const hasMyRating = Number(game.rating) > 0
+                const isRatingOpen = !hasMyRating || ratingEditorOpen[gameKey]
+                const ratingLabel = hasMyRating ? `${game.rating}/10` : game.avgRating === null ? "Rate" : `${game.avgRating}/10`
+
+                return (
+                  <div key={game.id} className="rounded-3xl border border-white/10 bg-neutral-950/70 p-3">
+                    <div className="flex gap-3">
+                      {game.poster ? <img src={game.poster} alt="" className="h-28 w-20 shrink-0 rounded-2xl object-cover" /> : null}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <strong className="line-clamp-2 text-lg leading-tight">{game.title}</strong>
+                          <button type="button" onClick={() => toggleRatingEditor(game)} className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-neutral-950 transition hover:bg-neutral-200" title="Change your rating">
+                            {ratingLabel}
+                          </button>
+                        </div>
+                        <div className="mt-1 text-xs text-neutral-500">{game.ratingCount || 0} rating{game.ratingCount === 1 ? "" : "s"}</div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {game.rawgRating ? <DetailPill>RAWG ★ {Number(game.rawgRating).toFixed(1)}</DetailPill> : null}
+                          {displayYear(game.released || game.year) ? <DetailPill>{displayYear(game.released || game.year)}</DetailPill> : null}
+                          {game.playtime ? <DetailPill>{game.playtime}h avg</DetailPill> : null}
+                        </div>
+                        {game.genres?.length ? <div className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-400">{game.genres.join(" · ")}</div> : null}
+                        <button type="button" onClick={() => openPlayedGameInfo(game)} className="mt-3 rounded-xl border border-white/10 px-3 py-2 text-sm font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950">Info</button>
+                        {isRatingOpen ? (
+                          <div className="mt-3 grid grid-cols-5 gap-1.5">
+                            {RATINGS.map((rating) => (
+                              <button key={rating} type="button" className={`rounded-xl border px-0 py-2 text-sm font-semibold transition ${Number(game.rating) === rating ? "border-white bg-white text-neutral-950" : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/30"}`} onClick={() => handleRating(game.game_id, rating)}>{rating}</button>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-xs text-neutral-500">Tap your rating badge to change it.</p>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </section>
@@ -270,7 +300,7 @@ export default function Games() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-2xl font-bold leading-tight">{infoGame.title}</h3>
-                    {infoGame.released || infoGame.year ? <div className="mt-1 text-sm text-neutral-400">{infoGame.released || infoGame.year}</div> : null}
+                    {displayYear(infoGame.released || infoGame.year) ? <div className="mt-1 text-sm text-neutral-400">{displayYear(infoGame.released || infoGame.year)}</div> : null}
                   </div>
                   <button type="button" onClick={() => setInfoGame(null)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 text-xl text-neutral-300 transition hover:bg-white hover:text-black">×</button>
                 </div>
