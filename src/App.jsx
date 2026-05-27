@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route } from "react-router-dom"
 import Movies from "./pages/Movies"
+import Series from "./pages/Series"
 import Videos from "./pages/Videos"
 import Lobby from "./pages/Lobby"
 import PageNav from "./components/PageNav"
@@ -92,6 +93,7 @@ export default function App() {
       />
 
       <Route path="/movies" element={<Movies />} />
+      <Route path="/series" element={<Series />} />
       <Route path="/videos" element={<Videos />} />
       <Route path="/games" element={<Games />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
