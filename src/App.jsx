@@ -5,6 +5,7 @@ import Videos from "./pages/Videos"
 import Lobby from "./pages/Lobby"
 import PageNav from "./components/PageNav"
 import Games from "./pages/Games"
+import Leaderboard from "./pages/Leaderboard"
 
 function HeroTitleText() {
   return (
@@ -58,50 +59,15 @@ export default function App() {
                 </div>
 
                 <style>{`
-                  .hero-title {
-                    font-size: clamp(2.15rem, 11vw, 4.5rem);
-                    line-height: 0.95;
-                    white-space: nowrap;
-                  }
-
-                  .hero-title-text + .hero-title-text {
-                    display: none;
-                  }
-
+                  .hero-title { font-size: clamp(2.15rem, 11vw, 4.5rem); line-height: 0.95; white-space: nowrap; }
+                  .hero-title-text + .hero-title-text { display: none; }
                   @media (max-width: 430px) {
-                    .hero-title-wrap {
-                      margin-left: -0.75rem;
-                      margin-right: -0.75rem;
-                      width: calc(100% + 1.5rem);
-                    }
-
-                    .hero-title {
-                      display: flex;
-                      width: max-content;
-                      animation: heroMarquee 3.2s linear infinite;
-                    }
-
-                    .hero-title-text {
-                      display: inline-flex;
-                      align-items: center;
-                      flex: 0 0 auto;
-                      padding-right: 2rem;
-                    }
-
-                    .hero-title-text + .hero-title-text {
-                      display: inline-flex;
-                    }
+                    .hero-title-wrap { margin-left: -0.75rem; margin-right: -0.75rem; width: calc(100% + 1.5rem); }
+                    .hero-title { display: flex; width: max-content; animation: heroMarquee 3.2s linear infinite; }
+                    .hero-title-text { display: inline-flex; align-items: center; flex: 0 0 auto; padding-right: 2rem; }
+                    .hero-title-text + .hero-title-text { display: inline-flex; }
                   }
-
-                  @keyframes heroMarquee {
-                    from {
-                      transform: translateX(0);
-                    }
-
-                    to {
-                      transform: translateX(-50%);
-                    }
-                  }
+                  @keyframes heroMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
                 `}</style>
 
                 <img
@@ -111,10 +77,7 @@ export default function App() {
                 />
 
                 <div className="mt-8 text-center">
-                  <p className="mb-3 text-sm uppercase tracking-[0.3em] text-neutral-400">
-                    verrückte mausige event
-                  </p>
-
+                  <p className="mb-3 text-sm uppercase tracking-[0.3em] text-neutral-400">verrückte mausige event</p>
                   <div className="flex justify-center gap-4 text-2xl font-bold">
                     <span>{timeLeft.days}d</span>
                     <span>{timeLeft.hours}h</span>
@@ -131,6 +94,7 @@ export default function App() {
       <Route path="/movies" element={<Movies />} />
       <Route path="/videos" element={<Videos />} />
       <Route path="/games" element={<Games />} />
+      <Route path="/leaderboard" element={<Leaderboard />} />
       <Route path="/lobby" element={<Lobby />} />
       <Route path="/lobby/:id" element={<Lobby />} />
     </Routes>
