@@ -1,7 +1,11 @@
 export const HANDLE_STORAGE_KEY = "nyb_handle"
 
 export function cleanHandle(value) {
-  return String(value || "").trim().toLowerCase()
+  return String(value || "").trim()
+}
+
+export function getHandleKey(value) {
+  return cleanHandle(value).toLowerCase()
 }
 
 export function getSavedHandle() {
