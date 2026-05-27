@@ -13,6 +13,18 @@ function mapGame(game) {
   }
 }
 
+async function fetchRawg(apiKey, path) {
+  if (!apiKey || !path) return null
+
+  const url = new URL(`https://api.rawg.io/api/${path}`)
+  url.searchParams.set('key', apiKey)
+
+  const res = await fetch(url)
+  if (!res.ok) return null
+
+  return res.json()
+}
+
 export async function searchGames(apiKey, query, page = 1) {
   if (!apiKey || !query) return []
 
@@ -32,18 +44,22 @@ export async function searchGames(apiKey, query, page = 1) {
 export async function getGameDetails(apiKey, gameId) {
   if (!apiKey || !gameId) return null
 
-  const url = new URL(`https://api.rawg.io/api/games/${gameId}`)
-  url.searchParams.set('key', apiKey)
+  const [details, screenshots] = await Promise.all([
+    fetchRawg(apiKey, `games/${gameId}`),
+    fetchRawg(apiKey, `games/${gameId}/screenshots`),
+  ])
 
-  const res = await fetch(url)
-  if (!res.ok) return null
+  if (!details) return null
 
-  const data = await res.json()
   return {
-    ...mapGame(data),
-    description: data.description_raw || '',
-    website: data.website || null,
-    playtime: data.playtime ?? null,
-    stores: data.stores?.map((entry) => entry.store?.name).filter(Boolean) ?? [],
+    ...mapGame(details),
+    description: details.description_raw || '',
+    website: details.website || null,
+    playtime: details.playtime ?? null,
+    developers: details.developers?.map((entry) => entry.name).filter(Boolean) ?? [],
+    publishers: details.publishers?.map((entry) => entry.name).filter(Boolean) ?? [],
+    stores: details.stores?.map((entry) => entry.store?.name).filter(Boolean) ?? [],
+    esrbRating: details.esrb_rating?.name || null,
+    screenshots: (screenshots?.results || []).map((shot) => shot.image).filter(Boolean).slice(0, 6),
   }
 }
