@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* Played game covers are clickable via hover/scale; no visible text overlay needed. */
+button[title^="Open "].group.relative > span {
+  display: none;
+}
