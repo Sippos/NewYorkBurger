@@ -1,9 +1,14 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { getMovieDetails } from "../lib/tmdb"
 
 function DetailPill({ children }) {
   if (!children) return null
   return <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-neutral-300">{children}</span>
+}
+
+function displayYear(value) {
+  const year = String(value || "").match(/\d{4}/)?.[0]
+  return year || ""
 }
 
 export default function SwipeDeck({
@@ -19,6 +24,7 @@ export default function SwipeDeck({
   const [drag, setDrag] = useState(null)
   const [infoMovie, setInfoMovie] = useState(null)
   const [loadingInfo, setLoadingInfo] = useState(false)
+  const [cardDetails, setCardDetails] = useState({})
   const pointer = useRef({ x: 0, y: 0 })
 
   const topMovie = movies[0]
@@ -26,6 +32,27 @@ export default function SwipeDeck({
   const watchOpacity = Math.min(Math.max(dragX / 110, 0), 1)
   const passOpacity = Math.min(Math.max(-dragX / 110, 0), 1)
   const apiKey = import.meta.env.VITE_TMDB_KEY
+
+  useEffect(() => {
+    if (!topMovie?.id || cardDetails[topMovie.id]) return
+
+    const alreadyHasSmallInfo = Boolean(topMovie.year || topMovie.released || topMovie.genres?.length)
+    if (alreadyHasSmallInfo) return
+
+    let cancelled = false
+
+    async function preloadTopCardDetails() {
+      const details = loadDetails ? await loadDetails(topMovie) : await getMovieDetails(apiKey, topMovie.id)
+      if (cancelled || !details) return
+      setCardDetails((current) => current[topMovie.id] ? current : { ...current, [topMovie.id]: details })
+    }
+
+    preloadTopCardDetails()
+
+    return () => {
+      cancelled = true
+    }
+  }, [topMovie?.id])
 
   const handlePointerDown = (e) => {
     const p = e.touches ? e.touches[0] : e
@@ -63,12 +90,17 @@ export default function SwipeDeck({
   async function openMovieInfo(movie) {
     setLoadingInfo(true)
 
-    const details = loadDetails ? await loadDetails(movie) : await getMovieDetails(apiKey, movie.id)
+    const cachedDetails = cardDetails[movie.id]
+    const details = cachedDetails || (loadDetails ? await loadDetails(movie) : await getMovieDetails(apiKey, movie.id))
 
     setInfoMovie({
       ...movie,
       ...(details || {}),
     })
+
+    if (details && !cachedDetails) {
+      setCardDetails((current) => current[movie.id] ? current : { ...current, [movie.id]: details })
+    }
 
     setLoadingInfo(false)
   }
@@ -99,8 +131,10 @@ export default function SwipeDeck({
 
         <div className="relative h-[620px]">
           {movies.map((movie, index) => {
+            const movieWithDetails = { ...movie, ...(cardDetails[movie.id] || {}) }
             const isTop = movie.id === topMovie.id
             const rotation = drag ? drag.dx / 18 : 0
+            const year = displayYear(movieWithDetails.released || movieWithDetails.year)
 
             const style =
               isTop && drag
@@ -122,23 +156,23 @@ export default function SwipeDeck({
                 style={{ ...style, zIndex: movies.length - index }}
                 onMouseDown={isTop ? handlePointerDown : undefined}
                 onMouseMove={isTop ? handlePointerMove : undefined}
-                onMouseUp={isTop ? () => handlePointerUp(movie) : undefined}
-                onMouseLeave={isTop ? () => handlePointerUp(movie) : undefined}
+                onMouseUp={isTop ? () => handlePointerUp(movieWithDetails) : undefined}
+                onMouseLeave={isTop ? () => handlePointerUp(movieWithDetails) : undefined}
                 onTouchStart={isTop ? handlePointerDown : undefined}
                 onTouchMove={isTop ? handlePointerMove : undefined}
-                onTouchEnd={isTop ? () => handlePointerUp(movie) : undefined}
+                onTouchEnd={isTop ? () => handlePointerUp(movieWithDetails) : undefined}
               >
                 <div className="relative h-[440px] bg-neutral-900">
-                  {movie.poster ? (
+                  {movieWithDetails.poster ? (
                     <img
-                      src={movie.poster}
-                      alt={movie.title}
+                      src={movieWithDetails.poster}
+                      alt={movieWithDetails.title}
                       draggable="false"
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-neutral-800 text-neutral-500 uppercase tracking-[0.25em]">
-                      {movie.platform || itemLabel}
+                      {movieWithDetails.platform || itemLabel}
                     </div>
                   )}
 
@@ -148,7 +182,7 @@ export default function SwipeDeck({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      openMovieInfo(movie)
+                      openMovieInfo(movieWithDetails)
                     }}
                     className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/60 text-lg font-bold text-white backdrop-blur transition hover:bg-white hover:text-black"
                   >
@@ -173,13 +207,16 @@ export default function SwipeDeck({
                   ) : null}
 
                   <div className="absolute bottom-0 left-0 right-0 p-5">
-                    <h3 className="text-3xl font-bold leading-tight">{movie.title}</h3>
-                    {movie.year ? <div className="mt-1 text-neutral-300">{movie.year}</div> : null}
-                    {movie.platform ? <div className="mt-1 text-neutral-300 capitalize">{movie.platform}</div> : null}
-                    {movie.genres?.length ? <div className="mt-1 line-clamp-1 text-sm text-neutral-300">{movie.genres.join(" · ")}</div> : null}
-                    {movie.nominated_by ? (
+                    <h3 className="text-3xl font-bold leading-tight">{movieWithDetails.title}</h3>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-300">
+                      {year ? <span>{year}</span> : null}
+                      {year && movieWithDetails.genres?.length ? <span>·</span> : null}
+                      {movieWithDetails.genres?.length ? <span className="line-clamp-1">{movieWithDetails.genres.slice(0, 2).join(" · ")}</span> : null}
+                    </div>
+                    {movieWithDetails.platform ? <div className="mt-1 text-neutral-300 capitalize">{movieWithDetails.platform}</div> : null}
+                    {movieWithDetails.nominated_by ? (
                       <div className="mt-2 text-xs uppercase tracking-[0.2em] text-neutral-400">
-                        Added by {movie.nominated_by}
+                        Added by {movieWithDetails.nominated_by}
                       </div>
                     ) : null}
                   </div>
@@ -189,14 +226,14 @@ export default function SwipeDeck({
                   <button
                     type="button"
                     className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950"
-                    onClick={() => onSwipe("dislike", movie)}
+                    onClick={() => onSwipe("dislike", movieWithDetails)}
                   >
                     {dislikeLabel}
                   </button>
                   <button
                     type="button"
                     className="rounded-2xl bg-white px-4 py-3 font-semibold text-neutral-950 transition hover:bg-neutral-200"
-                    onClick={() => onSwipe("like", movie)}
+                    onClick={() => onSwipe("like", movieWithDetails)}
                   >
                     {likeLabel}
                   </button>
@@ -218,7 +255,7 @@ export default function SwipeDeck({
                   <div>
                     <h3 className="text-2xl font-bold leading-tight">{infoMovie.title}</h3>
                     {infoMovie.year || infoMovie.released ? (
-                      <div className="mt-1 text-sm text-neutral-400">{infoMovie.released || infoMovie.year}</div>
+                      <div className="mt-1 text-sm text-neutral-400">{displayYear(infoMovie.released || infoMovie.year)}</div>
                     ) : null}
                   </div>
 
