@@ -52,7 +52,7 @@ export default function Leaderboard() {
           <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Community legends</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">Suggestion leaderboard</h1>
           <p className="mt-3 max-w-2xl text-neutral-400">
-            Stars are earned when people make good suggestions: movies and games get points when nominated, watched or played, and highly rated. Videos get points when uploaded and when they become classics.
+            Stars are earned when people make good suggestions: movies, series, and games get points when nominated, watched or played, and highly rated. Videos get points when uploaded and when they become classics.
           </p>
         </section>
 
@@ -61,7 +61,7 @@ export default function Leaderboard() {
 
         {!loading && leaders.length === 0 ? (
           <section className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-5 text-neutral-400">
-            No leaderboard points yet. Add movies, games, or videos to start the competition.
+            No leaderboard points yet. Add movies, series, games, or videos to start the competition.
           </section>
         ) : null}
 
@@ -74,8 +74,9 @@ export default function Leaderboard() {
                   <div className="rounded-full bg-white px-3 py-1 text-sm font-bold text-neutral-950">{person.total} ⭐</div>
                 </div>
                 <h2 className="mt-4 truncate text-2xl font-bold">{person.handle}</h2>
-                <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <StatPill label="Movies" value={person.breakdown.movies} />
+                  <StatPill label="Series" value={person.breakdown.series} />
                   <StatPill label="Games" value={person.breakdown.games} />
                   <StatPill label="Videos" value={person.breakdown.videos} />
                 </div>
@@ -117,6 +118,7 @@ export default function Leaderboard() {
                     <div className="flex flex-wrap gap-2 text-sm">
                       <span className="rounded-full bg-white px-3 py-1.5 font-bold text-neutral-950">{person.total} ⭐</span>
                       <span className="rounded-full border border-white/10 px-3 py-1.5 text-neutral-400">🎬 {person.breakdown.movies}</span>
+                      <span className="rounded-full border border-white/10 px-3 py-1.5 text-neutral-400">📺 {person.breakdown.series}</span>
                       <span className="rounded-full border border-white/10 px-3 py-1.5 text-neutral-400">🎮 {person.breakdown.games}</span>
                       <span className="rounded-full border border-white/10 px-3 py-1.5 text-neutral-400">📹 {person.breakdown.videos}</span>
                     </div>
