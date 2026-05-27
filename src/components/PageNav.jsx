@@ -36,7 +36,7 @@ export default function PageNav({ active = "home" }) {
     <>
       <header className="mb-5 rounded-[2rem] border border-white/10 bg-neutral-950/95 px-2 py-2 shadow-2xl shadow-black/30 backdrop-blur sm:rounded-full sm:px-4 sm:py-3">
         <div className="flex items-center gap-2 sm:gap-3">
-          <nav className="grid min-w-0 flex-1 grid-cols-4 gap-1 rounded-full bg-white/[0.04] p-1 text-center">
+          <nav className="grid min-w-0 flex-1 grid-cols-5 gap-1 rounded-full bg-white/[0.04] p-1 text-center">
             <Link to="/" aria-label="Home" title="Home" className={linkClass("home")}>
               <span className="text-base sm:hidden">⌂</span>
               <span className="hidden sm:inline">Home</span>
@@ -44,6 +44,10 @@ export default function PageNav({ active = "home" }) {
             <Link to="/movies" className={linkClass("movies")}>Movies</Link>
             <Link to="/games" className={linkClass("games")}>Games</Link>
             <Link to="/videos" className={linkClass("videos")}>Videos</Link>
+            <Link to="/leaderboard" aria-label="Leaderboard" title="Leaderboard" className={linkClass("leaderboard")}>
+              <span className="text-base sm:hidden">🏆</span>
+              <span className="hidden sm:inline">Board</span>
+            </Link>
           </nav>
 
           <button type="button" onClick={() => setEditing(true)} aria-label="Profile" className="flex h-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 text-sm font-semibold text-white transition hover:bg-white hover:text-black sm:px-4">
