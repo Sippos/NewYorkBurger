@@ -70,12 +70,12 @@ export default function PageNav({ active = "home" }) {
             </div>
 
             <p className="mt-3 text-sm text-neutral-400">
-              Use the same name on another device to load your previous votes, ratings, uploads, and leaderboard points. This is not password protected yet, so anyone using the same name can continue as that profile.
+              Use the same name on another device to load your previous votes, ratings, uploads, and leaderboard points. Capital letters are kept for display, but matching ignores capitalization. This is not password protected yet.
             </p>
 
             <label className="mt-5 block text-sm font-semibold text-neutral-300">Profile name</label>
-            <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="example: priti" className="mt-2 w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 lowercase outline-none" />
-            <p className="mt-2 text-xs text-neutral-500">Names are saved lowercase so the same profile works across devices.</p>
+            <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="example: Sip" className="mt-2 w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none" />
+            <p className="mt-2 text-xs text-neutral-500">Example: Sip and sip load the same votes, but Sip can still display nicely.</p>
             {savedMessage ? <p className="mt-3 rounded-2xl bg-emerald-700 p-3 text-sm text-white">{savedMessage}</p> : null}
             <button type="button" onClick={saveHandle} className="mt-4 w-full rounded-2xl bg-white px-5 py-3 font-semibold text-black">Use this profile name</button>
           </div>
