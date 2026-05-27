@@ -218,4 +218,88 @@ export async function deleteVideoLink(videoId) {
   return handle(await supabase.from("video_links").delete().eq("id", videoId))
 }
 
+function cleanHandle(handleName) {
+  const handle = String(handleName || "").trim()
+  if (!handle || handle === "local") return null
+  return handle
+}
+
+function addScore(board, handleName, source, points, reason, id) {
+  const handle = cleanHandle(handleName)
+  if (!handle || !points) return
+
+  if (!board[handle]) {
+    board[handle] = {
+      handle,
+      total: 0,
+      breakdown: { movies: 0, games: 0, videos: 0 },
+      activity: [],
+    }
+  }
+
+  board[handle].total += points
+  board[handle].breakdown[source] += points
+  board[handle].activity.push({ id, source, points, reason })
+}
+
+function averageRating(rows, idKey, id) {
+  const matches = (rows || []).filter((row) => String(row[idKey]) === String(id))
+  if (matches.length === 0) return null
+  return matches.reduce((sum, row) => sum + Number(row.rating || 0), 0) / matches.length
+}
+
+export async function getLeaderboard() {
+  if (!supabase) return { error: "Supabase not configured" }
+
+  const [moviesRes, watchedRes, ratingsRes, gamesRes, playedRes, gameRatingsRes, videosRes] = await Promise.all([
+    supabase.from("nominations").select("*"),
+    supabase.from("watched").select("*"),
+    supabase.from("ratings").select("*"),
+    supabase.from("game_nominations").select("*"),
+    supabase.from("game_watched").select("*"),
+    supabase.from("game_ratings").select("*"),
+    supabase.from("video_links").select("*"),
+  ])
+
+  const firstError = [moviesRes, watchedRes, ratingsRes, gamesRes, playedRes, gameRatingsRes, videosRes].find((res) => res.error)?.error
+  if (firstError) return { error: firstError }
+
+  const board = {}
+  const watchedIds = new Set((watchedRes.data || []).map((movie) => String(movie.movie_id)))
+  const playedIds = new Set((playedRes.data || []).map((game) => String(game.game_id)))
+
+  for (const movie of moviesRes.data || []) {
+    const title = movie.title || "a movie"
+    addScore(board, movie.nominated_by, "movies", 1, `suggested movie “${title}”`, `movie-${movie.movie_id}-nomination`)
+    if (watchedIds.has(String(movie.movie_id))) addScore(board, movie.nominated_by, "movies", 5, `movie picked: “${title}”`, `movie-${movie.movie_id}-watched`)
+
+    const avg = averageRating(ratingsRes.data, "movie_id", movie.movie_id)
+    if (avg >= 8) addScore(board, movie.nominated_by, "movies", 3, `high-rated movie: “${title}”`, `movie-${movie.movie_id}-high-rating`)
+  }
+
+  for (const game of gamesRes.data || []) {
+    const title = game.title || "a game"
+    addScore(board, game.nominated_by, "games", 1, `suggested game “${title}”`, `game-${game.game_id}-nomination`)
+    if (playedIds.has(String(game.game_id))) addScore(board, game.nominated_by, "games", 5, `game played: “${title}”`, `game-${game.game_id}-played`)
+
+    const avg = averageRating(gameRatingsRes.data, "game_id", game.game_id)
+    if (avg >= 8) addScore(board, game.nominated_by, "games", 3, `high-rated game: “${title}”`, `game-${game.game_id}-high-rating`)
+  }
+
+  for (const video of videosRes.data || []) {
+    const title = video.title || "a video"
+    addScore(board, video.uploaded_by, "videos", 1, `uploaded video “${title}”`, `video-${video.id}-upload`)
+    if (video.is_classic) addScore(board, video.uploaded_by, "videos", 4, `classic video: “${title}”`, `video-${video.id}-classic`)
+  }
+
+  const data = Object.values(board)
+    .map((person) => ({
+      ...person,
+      activity: person.activity.sort((a, b) => b.points - a.points),
+    }))
+    .sort((a, b) => b.total - a.total || a.handle.localeCompare(b.handle))
+
+  return { data }
+}
+
 export default supabase
