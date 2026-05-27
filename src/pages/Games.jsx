@@ -3,7 +3,7 @@ import SwipeDeck from "../components/SwipeDeck"
 import GameRanking from "../components/GameRanking"
 import PageNav from "../components/PageNav"
 import { getSavedHandle } from "../lib/handle"
-import { searchGames } from "../lib/rawg"
+import { getGameDetails, searchGames } from "../lib/rawg"
 import { addGameNomination, getGameNominations, getMyGameVotes, getPlayedGames, markGamePlayedWithRating, setGameRating, voteGame } from "../lib/supabaseClient"
 
 const LOBBY_ID = "global"
@@ -122,7 +122,7 @@ export default function Games() {
         <section className="mb-5 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20 sm:rounded-[1.75rem] md:p-5">
           <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Game night</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">Pick what to play</h1>
-          <p className="mt-3 max-w-2xl text-neutral-400">Search games, add them to the pile, and vote with your navbar profile.</p>
+          <p className="mt-3 max-w-2xl text-neutral-400">Search games, add them to the pile, and use the info button to check genres, platforms, screenshots, ratings, and descriptions before voting.</p>
           {!canUseApp ? <p className="mt-3 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 p-3 text-sm text-yellow-200">Create a profile with the Profile button in the navbar before voting or adding games.</p> : null}
 
           <form onSubmit={handleSearch} className="mt-4">
@@ -150,6 +150,7 @@ export default function Games() {
                   <div className="min-w-0 flex-1">
                     <strong className="block truncate">{game.title}</strong>
                     <div className="text-sm text-neutral-400">{game.year || "Unknown year"}</div>
+                    {game.genres?.length ? <div className="mt-1 line-clamp-1 text-xs text-neutral-500">{game.genres.join(" · ")}</div> : null}
                     {game.platforms?.length ? <div className="mt-1 line-clamp-1 text-xs text-neutral-500">{game.platforms.join(", ")}</div> : null}
                   </div>
                   <button type="button" className="rounded-xl border border-white/10 px-3 py-2 text-sm transition hover:bg-white hover:text-neutral-950" onClick={() => handleAddGame(game)}>Add</button>
@@ -163,7 +164,16 @@ export default function Games() {
         {canUseApp ? (
           <>
             <section ref={deckRef} className="mb-8">
-              <SwipeDeck movies={queue} onSwipe={handleSwipe} itemLabel="games" emptyLabel="No games left to vote on" />
+              <SwipeDeck
+                movies={queue}
+                onSwipe={handleSwipe}
+                itemLabel="games"
+                emptyLabel="No games left to vote on"
+                likeLabel="Play"
+                dislikeLabel="Pass"
+                infoType="game"
+                loadDetails={(game) => getGameDetails(apiKey, game.id)}
+              />
             </section>
             <GameRanking lobbyId={LOBBY_ID} refreshKey={rankingRefreshKey} voterName={activeHandle} />
           </>
