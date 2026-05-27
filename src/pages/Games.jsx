@@ -55,7 +55,31 @@ export default function Games() {
   async function loadPlayed() {
     if (!activeHandle) return
     const res = await getPlayedGames(activeHandle)
-    if (res?.data) setPlayed(res.data)
+    if (!res?.data) return
+
+    const playedGames = res.data
+    setPlayed(playedGames)
+
+    if (!apiKey) return
+
+    const enriched = await Promise.all(
+      playedGames.map(async (game) => {
+        const gameId = game.game_id || game.id
+        const details = await getGameDetails(apiKey, gameId)
+        if (!details) return game
+        return {
+          ...game,
+          ...details,
+          id: game.id,
+          game_id: game.game_id,
+          avgRating: game.avgRating,
+          rating: game.rating,
+          ratingCount: game.ratingCount,
+        }
+      })
+    )
+
+    setPlayed(enriched)
   }
 
   function clearSearch() {
@@ -215,6 +239,12 @@ export default function Games() {
                         <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-neutral-950">{game.avgRating === null ? "No rating" : `${game.avgRating}/10`}</span>
                       </div>
                       <div className="mt-1 text-xs text-neutral-500">{game.ratingCount || 0} rating{game.ratingCount === 1 ? "" : "s"}</div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {game.rawgRating ? <DetailPill>RAWG ★ {Number(game.rawgRating).toFixed(1)}</DetailPill> : null}
+                        {game.released || game.year ? <DetailPill>{game.released || game.year}</DetailPill> : null}
+                        {game.playtime ? <DetailPill>{game.playtime}h avg</DetailPill> : null}
+                      </div>
+                      {game.genres?.length ? <div className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-400">{game.genres.join(" · ")}</div> : null}
                       <button type="button" onClick={() => openPlayedGameInfo(game)} className="mt-3 rounded-xl border border-white/10 px-3 py-2 text-sm font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950">Info</button>
                       <div className="mt-3 grid grid-cols-5 gap-1.5">
                         {RATINGS.map((rating) => (
