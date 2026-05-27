@@ -3,9 +3,13 @@ function mapMovie(m) {
     id: m.id,
     title: m.title,
     year: m.release_date ? m.release_date.split('-')[0] : '',
+    released: m.release_date || null,
     poster: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+    backdrop: m.backdrop_path ? `https://image.tmdb.org/t/p/w780${m.backdrop_path}` : null,
     overview: m.overview || '',
     tmdbRating: m.vote_average ?? null,
+    runtime: m.runtime ?? null,
+    genres: m.genres?.map((genre) => genre.name).filter(Boolean) ?? [],
   }
 }
 
