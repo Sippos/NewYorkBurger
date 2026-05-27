@@ -9,6 +9,11 @@ import { addGameNomination, getGameNominations, getMyGameVotes, getPlayedGames, 
 const LOBBY_ID = "global"
 const RATINGS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
+function DetailPill({ children }) {
+  if (!children) return null
+  return <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-neutral-300">{children}</span>
+}
+
 export default function Games() {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState([])
@@ -16,6 +21,8 @@ export default function Games() {
   const [played, setPlayed] = useState([])
   const [rankingRefreshKey, setRankingRefreshKey] = useState(0)
   const [actionMessage, setActionMessage] = useState(null)
+  const [infoGame, setInfoGame] = useState(null)
+  const [loadingInfoGame, setLoadingInfoGame] = useState(false)
 
   const deckRef = useRef(null)
   const apiKey = import.meta.env.VITE_RAWG_API_KEY
@@ -114,6 +121,14 @@ export default function Games() {
     setTimeout(() => setActionMessage(null), 2500)
   }
 
+  async function openPlayedGameInfo(game) {
+    setLoadingInfoGame(true)
+    const gameId = game.game_id || game.id
+    const details = await getGameDetails(apiKey, gameId)
+    setInfoGame({ ...game, ...(details || {}) })
+    setLoadingInfoGame(false)
+  }
+
   return (
     <div className="min-h-screen bg-neutral-950 px-3 py-3 text-white sm:px-4 md:px-6">
       <div className="mx-auto max-w-5xl">
@@ -200,6 +215,7 @@ export default function Games() {
                         <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-neutral-950">{game.avgRating === null ? "No rating" : `${game.avgRating}/10`}</span>
                       </div>
                       <div className="mt-1 text-xs text-neutral-500">{game.ratingCount || 0} rating{game.ratingCount === 1 ? "" : "s"}</div>
+                      <button type="button" onClick={() => openPlayedGameInfo(game)} className="mt-3 rounded-xl border border-white/10 px-3 py-2 text-sm font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950">Info</button>
                       <div className="mt-3 grid grid-cols-5 gap-1.5">
                         {RATINGS.map((rating) => (
                           <button key={rating} type="button" className={`rounded-xl border px-0 py-2 text-sm font-semibold transition ${Number(game.rating) === rating ? "border-white bg-white text-neutral-950" : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/30"}`} onClick={() => handleRating(game.game_id, rating)}>{rating}</button>
@@ -213,6 +229,61 @@ export default function Games() {
           )}
         </section>
       </div>
+
+      {infoGame || loadingInfoGame ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-white/10 bg-neutral-950 p-5 shadow-2xl shadow-black/40">
+            {loadingInfoGame ? (
+              <div className="py-16 text-center text-neutral-400">Loading game info...</div>
+            ) : (
+              <>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-2xl font-bold leading-tight">{infoGame.title}</h3>
+                    {infoGame.released || infoGame.year ? <div className="mt-1 text-sm text-neutral-400">{infoGame.released || infoGame.year}</div> : null}
+                  </div>
+                  <button type="button" onClick={() => setInfoGame(null)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 text-xl text-neutral-300 transition hover:bg-white hover:text-black">×</button>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {infoGame.rawgRating ? <DetailPill>RAWG ★ {Number(infoGame.rawgRating).toFixed(1)}</DetailPill> : null}
+                  {infoGame.metacritic ? <DetailPill>Metacritic {infoGame.metacritic}</DetailPill> : null}
+                  {infoGame.playtime ? <DetailPill>{infoGame.playtime}h avg playtime</DetailPill> : null}
+                  {infoGame.esrbRating ? <DetailPill>{infoGame.esrbRating}</DetailPill> : null}
+                  {infoGame.avgRating === null || infoGame.avgRating === undefined ? null : <DetailPill>Group ★ {infoGame.avgRating}/10</DetailPill>}
+                </div>
+
+                {infoGame.genres?.length ? (
+                  <div className="mt-4">
+                    <div className="text-xs uppercase tracking-[0.25em] text-neutral-500">Genres</div>
+                    <div className="mt-2 flex flex-wrap gap-2">{infoGame.genres.map((genre) => <DetailPill key={genre}>{genre}</DetailPill>)}</div>
+                  </div>
+                ) : null}
+
+                {infoGame.platforms?.length ? (
+                  <div className="mt-4">
+                    <div className="text-xs uppercase tracking-[0.25em] text-neutral-500">Platforms</div>
+                    <p className="mt-2 text-sm leading-6 text-neutral-300">{infoGame.platforms.join(", ")}</p>
+                  </div>
+                ) : null}
+
+                {infoGame.screenshots?.length ? (
+                  <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {infoGame.screenshots.map((shot) => <img key={shot} src={shot} alt={`${infoGame.title} screenshot`} className="h-24 w-full rounded-2xl object-cover" />)}
+                  </div>
+                ) : null}
+
+                <p className="mt-5 text-sm leading-7 text-neutral-300">{infoGame.description || "No game description available."}</p>
+
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {infoGame.website ? <a href={infoGame.website} target="_blank" rel="noreferrer" className="rounded-2xl border border-white/10 px-4 py-3 text-center text-sm font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950">Official website</a> : null}
+                  {infoGame.rawgUrl ? <a href={infoGame.rawgUrl} target="_blank" rel="noreferrer" className="rounded-2xl border border-white/10 px-4 py-3 text-center text-sm font-semibold text-neutral-200 transition hover:bg-white hover:text-neutral-950">Open on RAWG</a> : null}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
