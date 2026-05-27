@@ -17,6 +17,10 @@ export function getVoterId(handleName = "") {
   return handle || getUserId()
 }
 
+function getDisplayHandle(handleName = "") {
+  return String(handleName || "").trim()
+}
+
 export async function addNomination(movie, nominatedBy = "local", lobbyId = "global") {
   if (!supabase) return { error: "Supabase not configured" }
 
@@ -25,7 +29,7 @@ export async function addNomination(movie, nominatedBy = "local", lobbyId = "glo
     movie_id: movie.id,
     title: movie.title,
     poster: movie.poster,
-    nominated_by: nominatedBy,
+    nominated_by: getDisplayHandle(nominatedBy) || "local",
   }
 
   const res = await supabase.from("nominations").upsert(payload, { onConflict: "lobby_id,movie_id" }).select()
@@ -80,12 +84,12 @@ export async function getMyVotes(lobbyId = "global", voterName = "") {
 
 export async function setRating(movieId, rating, rater = "local") {
   if (!supabase) return { error: "Supabase not configured" }
-  return handle(await supabase.from("ratings").upsert({ movie_id: movieId, rating, rater }, { onConflict: "movie_id,rater" }).select())
+  return handle(await supabase.from("ratings").upsert({ movie_id: movieId, rating, rater: getVoterId(rater) }, { onConflict: "movie_id,rater" }).select())
 }
 
 export async function markWatchedWithRating(movie, watchedBy, rating = null) {
   if (!supabase) return { error: "Supabase not configured" }
-  const res = await supabase.from("watched").upsert({ movie_id: movie.id, title: movie.title, poster: movie.poster, watched_by: watchedBy }, { onConflict: "movie_id" }).select()
+  const res = await supabase.from("watched").upsert({ movie_id: movie.id, title: movie.title, poster: movie.poster, watched_by: getDisplayHandle(watchedBy) || "local" }, { onConflict: "movie_id" }).select()
   if (rating !== null && rating !== undefined) await setRating(movie.id, rating, watchedBy)
   return handle(res)
 }
@@ -99,9 +103,10 @@ export async function getWatched(rater = "local") {
   if (movieIds.length === 0) return { data: watched }
   const ratingsRes = await supabase.from("ratings").select("*").in("movie_id", movieIds)
   const ratings = ratingsRes.data || []
+  const raterKey = getVoterId(rater)
   return { data: watched.map((movie) => {
     const movieRatings = ratings.filter((r) => r.movie_id === movie.movie_id)
-    const myRating = movieRatings.find((r) => r.rater === rater)
+    const myRating = movieRatings.find((r) => getVoterId(r.rater) === raterKey)
     const avgRating = movieRatings.length > 0 ? Math.round((movieRatings.reduce((sum, r) => sum + Number(r.rating), 0) / movieRatings.length) * 10) / 10 : null
     return { ...movie, rating: myRating?.rating ?? null, avgRating, ratingCount: movieRatings.length }
   }).sort((a, b) => (b.avgRating ?? -1) - (a.avgRating ?? -1) || b.ratingCount - a.ratingCount) }
@@ -114,7 +119,7 @@ export async function deleteWatchedByMovieId(movieId) {
 
 export async function addGameNomination(game, nominatedBy = "local", lobbyId = "global") {
   if (!supabase) return { error: "Supabase not configured" }
-  const payload = { lobby_id: lobbyId, game_id: game.id, title: game.title, poster: game.poster, nominated_by: nominatedBy }
+  const payload = { lobby_id: lobbyId, game_id: game.id, title: game.title, poster: game.poster, nominated_by: getDisplayHandle(nominatedBy) || "local" }
   return handle(await supabase.from("game_nominations").upsert(payload, { onConflict: "lobby_id,game_id" }).select())
 }
 
@@ -153,12 +158,12 @@ export async function getMyGameVotes(lobbyId = "global", voterName = "") {
 
 export async function setGameRating(gameId, rating, rater = "local") {
   if (!supabase) return { error: "Supabase not configured" }
-  return handle(await supabase.from("game_ratings").upsert({ game_id: gameId, rating, rater }, { onConflict: "game_id,rater" }).select())
+  return handle(await supabase.from("game_ratings").upsert({ game_id: gameId, rating, rater: getVoterId(rater) }, { onConflict: "game_id,rater" }).select())
 }
 
 export async function markGamePlayedWithRating(game, playedBy, rating = null) {
   if (!supabase) return { error: "Supabase not configured" }
-  const res = await supabase.from("game_watched").upsert({ game_id: game.id, title: game.title, poster: game.poster, watched_by: playedBy }, { onConflict: "game_id" }).select()
+  const res = await supabase.from("game_watched").upsert({ game_id: game.id, title: game.title, poster: game.poster, watched_by: getDisplayHandle(playedBy) || "local" }, { onConflict: "game_id" }).select()
   if (rating !== null && rating !== undefined) await setGameRating(game.id, rating, playedBy)
   return handle(res)
 }
@@ -172,9 +177,10 @@ export async function getPlayedGames(rater = "local") {
   if (gameIds.length === 0) return { data: played }
   const ratingsRes = await supabase.from("game_ratings").select("*").in("game_id", gameIds)
   const ratings = ratingsRes.data || []
+  const raterKey = getVoterId(rater)
   return { data: played.map((game) => {
     const gameRatings = ratings.filter((r) => r.game_id === game.game_id)
-    const myRating = gameRatings.find((r) => r.rater === rater)
+    const myRating = gameRatings.find((r) => getVoterId(r.rater) === raterKey)
     const avgRating = gameRatings.length > 0 ? Math.round((gameRatings.reduce((sum, r) => sum + Number(r.rating), 0) / gameRatings.length) * 10) / 10 : null
     return { ...game, rating: myRating?.rating ?? null, avgRating, ratingCount: gameRatings.length }
   }).sort((a, b) => (b.avgRating ?? -1) - (a.avgRating ?? -1) || b.ratingCount - a.ratingCount) }
@@ -193,7 +199,7 @@ export async function addVideoLink(video, uploadedBy = "local", isClassic = fals
     url: video.url,
     poster: video.poster || null,
     platform: video.platform || "link",
-    uploaded_by: uploadedBy,
+    uploaded_by: getDisplayHandle(uploadedBy) || "local",
     is_classic: isClassic,
   }
   return handle(await supabase.from("video_links").upsert(payload, { onConflict: "id" }).select())
@@ -218,28 +224,42 @@ export async function deleteVideoLink(videoId) {
   return handle(await supabase.from("video_links").delete().eq("id", videoId))
 }
 
-function cleanHandle(handleName) {
+function leaderboardKey(handleName) {
   const handle = String(handleName || "").trim()
-  if (!handle || handle === "local") return null
-  return handle
+  if (!handle || handle.toLowerCase() === "local") return null
+  return handle.toLowerCase()
+}
+
+function chooseDisplayHandle(existingDisplay, nextDisplay) {
+  const next = String(nextDisplay || "").trim()
+  if (!next) return existingDisplay
+  if (!existingDisplay) return next
+  const existingHasUpper = /[A-Z]/.test(existingDisplay)
+  const nextHasUpper = /[A-Z]/.test(next)
+  if (!existingHasUpper && nextHasUpper) return next
+  return existingDisplay
 }
 
 function addScore(board, handleName, source, points, reason, id) {
-  const handle = cleanHandle(handleName)
-  if (!handle || !points) return
+  const key = leaderboardKey(handleName)
+  if (!key || !points) return
+  const displayHandle = getDisplayHandle(handleName)
 
-  if (!board[handle]) {
-    board[handle] = {
-      handle,
+  if (!board[key]) {
+    board[key] = {
+      handle: displayHandle || key,
+      key,
       total: 0,
       breakdown: { movies: 0, games: 0, videos: 0 },
       activity: [],
     }
+  } else {
+    board[key].handle = chooseDisplayHandle(board[key].handle, displayHandle)
   }
 
-  board[handle].total += points
-  board[handle].breakdown[source] += points
-  board[handle].activity.push({ id, source, points, reason })
+  board[key].total += points
+  board[key].breakdown[source] += points
+  board[key].activity.push({ id, source, points, reason })
 }
 
 function averageRating(rows, idKey, id) {
