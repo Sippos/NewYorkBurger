@@ -18,11 +18,12 @@ export default function PageNav({ active = "home" }) {
     const saved = saveSharedHandle(draft)
     if (!saved) return
     setHandle(saved)
-    setSavedMessage(`Saved as ${saved}`)
+    setDraft(saved)
+    setSavedMessage(`Continuing as ${saved}`)
     setTimeout(() => {
       setSavedMessage("")
       setEditing(false)
-    }, 650)
+    }, 900)
   }
 
   const linkClass = (name) =>
@@ -62,18 +63,21 @@ export default function PageNav({ active = "home" }) {
           <div className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-neutral-950 p-5 shadow-2xl shadow-black/40">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-xs uppercase tracking-[0.3em] text-neutral-500">Profile</div>
-                <h2 className="mt-1 text-2xl font-bold">Your profile</h2>
+                <div className="text-xs uppercase tracking-[0.3em] text-neutral-500">Profile name</div>
+                <h2 className="mt-1 text-2xl font-bold">Continue as</h2>
               </div>
               <button type="button" onClick={() => setEditing(false)} className="text-2xl text-neutral-400 hover:text-white">×</button>
             </div>
 
-            <p className="mt-3 text-sm text-neutral-400">This display name is saved on this device and shown when you upload, vote, or rate.</p>
+            <p className="mt-3 text-sm text-neutral-400">
+              Use the same name on another device to load your previous votes, ratings, uploads, and leaderboard points. This is not password protected yet, so anyone using the same name can continue as that profile.
+            </p>
 
-            <label className="mt-5 block text-sm font-semibold text-neutral-300">Display name</label>
-            <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Choose a display name" className="mt-2 w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none" />
+            <label className="mt-5 block text-sm font-semibold text-neutral-300">Profile name</label>
+            <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="example: priti" className="mt-2 w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 lowercase outline-none" />
+            <p className="mt-2 text-xs text-neutral-500">Names are saved lowercase so the same profile works across devices.</p>
             {savedMessage ? <p className="mt-3 rounded-2xl bg-emerald-700 p-3 text-sm text-white">{savedMessage}</p> : null}
-            <button type="button" onClick={saveHandle} className="mt-4 w-full rounded-2xl bg-white px-5 py-3 font-semibold text-black">Save profile</button>
+            <button type="button" onClick={saveHandle} className="mt-4 w-full rounded-2xl bg-white px-5 py-3 font-semibold text-black">Use this profile name</button>
           </div>
         </div>
       ) : null}
