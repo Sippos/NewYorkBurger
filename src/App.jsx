@@ -7,6 +7,7 @@ import Lobby from "./pages/Lobby"
 import PageNav from "./components/PageNav"
 import Games from "./pages/Games"
 import Leaderboard from "./pages/Leaderboard"
+import CookingEvent from "./components/CookingEvent"
 
 function HeroTitleText() {
   return (
@@ -86,6 +87,8 @@ export default function App() {
                     <span>{timeLeft.seconds}s</span>
                   </div>
                 </div>
+
+                <CookingEvent />
               </div>
             </div>
           </main>
