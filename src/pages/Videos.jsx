@@ -13,7 +13,7 @@ function VideoCard({ video, onEdit, onMarkClassic }) {
           {video.poster && video.platform !== "tiktok" ? (
             <img src={video.poster} alt={video.title} className="h-52 w-full object-cover" />
           ) : (
-            <div className="flex h-52 items-center justify-center bg-neutral-900 text-neutral-500 uppercase tracking-[0.3em]">
+            <div className="flex h-52 w-full items-center justify-center bg-neutral-900 text-neutral-500 uppercase tracking-[0.3em]">
               {video.platform}
             </div>
           )}
